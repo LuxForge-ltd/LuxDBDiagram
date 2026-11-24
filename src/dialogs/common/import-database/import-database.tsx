@@ -49,6 +49,9 @@ import { verifyDBML } from '@/lib/dbml/dbml-import/verify-dbml';
 import { importDBMLToDiagram } from '@/lib/dbml/dbml-import/dbml-import';
 import { locateLineByFileHeaders } from '@/lib/areas/multi-file-dbml';
 import { DBMLFilesButton } from './dbml-files-button';
+import { DBMLFolderButton } from './dbml-folder/dbml-folder-button';
+import { DBMLFolderPanel } from './dbml-folder/dbml-folder-panel';
+import { useDBMLFolder } from './dbml-folder/use-dbml-folder';
 import { sqlImportToDiagram } from '@/lib/data/sql-import';
 import {
     clearErrorHighlight,
@@ -123,12 +126,34 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
         clearErrorHighlight(decorationsCollection.current);
     }, []);
 
+    // LuxDBDiagram: an opened folder of DBML files; its combined text is what gets imported.
+    const dbmlFolder = useDBMLFolder();
+    const { close: closeDBMLFolder } = dbmlFolder;
+    const folderComposed = dbmlFolder.composed;
+    useEffect(() => {
+        if (folderComposed) setScriptResult(folderComposed.content);
+    }, [folderComposed, setScriptResult]);
+    const debouncedFolderFileChange = useDebounce(dbmlFolder.updateFile, 500);
+    const folderActivePath = dbmlFolder.folder?.activePath ?? null;
+    // The editor reports the text it is given when the shown file changes; that event can
+    // reach the previous file's handler, so a handler only writes while its file is shown.
+    const folderActivePathRef = useRef(folderActivePath);
+    folderActivePathRef.current = folderActivePath;
+    const handleFolderFileChange = useCallback(
+        (path: string, value: string | undefined) => {
+            if (folderActivePathRef.current !== path) return;
+            debouncedFolderFileChange(path, value ?? '');
+        },
+        [debouncedFolderFileChange]
+    );
+
     useEffect(() => {
         setScriptResult('');
         setErrorMessage('');
         setShowCheckJsonButton(false);
         setJsonCheckAttempts(0);
-    }, [importMethod, setScriptResult]);
+        closeDBMLFolder();
+    }, [importMethod, setScriptResult, closeDBMLFolder]);
 
     // Check if the ddl or dbml is valid
     useEffect(() => {
@@ -333,7 +358,7 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
         }
     }, [sqlValidation, setScriptResult]);
 
-    const handleErrorClick = useCallback((line: number) => {
+    const revealEditorLine = useCallback((line: number) => {
         if (editorRef.current) {
             // Set cursor to the error line
             editorRef.current.setPosition({ lineNumber: line, column: 1 });
@@ -341,6 +366,25 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
             editorRef.current.focus();
         }
     }, []);
+
+    // LuxDBDiagram: with a folder open and a file shown, the error's line is in the combined
+    // text, so show the file it came from at its own line.
+    const { setActive: setActiveFolderFile } = dbmlFolder;
+    const handleErrorClick = useCallback(
+        (line: number) => {
+            const source =
+                folderActivePath !== null
+                    ? locateLineByFileHeaders(scriptResult, line)
+                    : null;
+            if (!source) {
+                revealEditorLine(line);
+                return;
+            }
+            setActiveFolderFile(source.file);
+            setTimeout(() => revealEditorLine(source.line), 50);
+        },
+        [folderActivePath, scriptResult, revealEditorLine, setActiveFolderFile]
+    );
 
     const formatEditor = useCallback(() => {
         if (editorRef.current) {
@@ -515,61 +559,85 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
                         : importMethod === 'dbml'
                           ? 'DBML Script'
                           : 'SQL Script'}
-                    {/* LuxDBDiagram: open one or several .dbml files (merged into one schema). */}
+                    {/* LuxDBDiagram: open .dbml files (merged into one schema) or a folder of them. */}
                     {importMethod === 'dbml' ? (
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                            <DBMLFilesButton onLoad={setScriptResult} />
+                        <div className="absolute right-0 top-1/2 flex -translate-y-1/2 gap-1">
+                            <DBMLFolderButton onOpen={dbmlFolder.open} />
+                            <DBMLFilesButton
+                                onLoad={(content) => {
+                                    closeDBMLFolder();
+                                    setScriptResult(content);
+                                }}
+                            />
                         </div>
                     ) : null}
                 </div>
-                <div className="flex-1 overflow-hidden">
-                    <Suspense fallback={<Spinner />}>
-                        <Editor
-                            value={scriptResult}
-                            onChange={debouncedHandleInputChange}
-                            language={
-                                importMethod === 'query'
-                                    ? 'json'
-                                    : importMethod === 'dbml'
-                                      ? 'dbml'
-                                      : 'sql'
-                            }
-                            loading={<Spinner />}
-                            onMount={handleEditorDidMount}
-                            beforeMount={setupDBMLLanguage}
-                            theme={
-                                effectiveTheme === 'dark'
-                                    ? 'dbml-dark'
-                                    : 'dbml-light'
-                            }
-                            options={{
-                                editContext: false,
-                                formatOnPaste: false, // Never format on paste - we handle it manually
-                                minimap: { enabled: false },
-                                scrollBeyondLastLine: false,
-                                automaticLayout: true,
-                                lineNumbers: 'on',
-                                guides: {
-                                    indentation: false,
-                                },
-                                folding: true,
-                                lineNumbersMinChars: 3,
-                                renderValidationDecorations: 'off',
-                                lineDecorationsWidth: 0,
-                                overviewRulerBorder: false,
-                                overviewRulerLanes: 0,
-                                hideCursorInOverviewRuler: true,
-                                contextmenu: false,
+                <div className="flex flex-1 overflow-hidden">
+                    <DBMLFolderPanel controller={dbmlFolder} />
+                    <div className="min-w-0 flex-1">
+                        <Suspense fallback={<Spinner />}>
+                            <Editor
+                                value={dbmlFolder.activeContent ?? scriptResult}
+                                onChange={
+                                    folderActivePath !== null
+                                        ? (value) =>
+                                              handleFolderFileChange(
+                                                  folderActivePath,
+                                                  value
+                                              )
+                                        : dbmlFolder.folder
+                                          ? undefined
+                                          : debouncedHandleInputChange
+                                }
+                                language={
+                                    importMethod === 'query'
+                                        ? 'json'
+                                        : importMethod === 'dbml'
+                                          ? 'dbml'
+                                          : 'sql'
+                                }
+                                loading={<Spinner />}
+                                onMount={handleEditorDidMount}
+                                beforeMount={setupDBMLLanguage}
+                                theme={
+                                    effectiveTheme === 'dark'
+                                        ? 'dbml-dark'
+                                        : 'dbml-light'
+                                }
+                                options={{
+                                    // LuxDBDiagram: the combined folder import is shown, not edited.
+                                    readOnly: Boolean(
+                                        dbmlFolder.folder &&
+                                        folderActivePath === null
+                                    ),
+                                    editContext: false,
+                                    formatOnPaste: false, // Never format on paste - we handle it manually
+                                    minimap: { enabled: false },
+                                    scrollBeyondLastLine: false,
+                                    automaticLayout: true,
+                                    lineNumbers: 'on',
+                                    guides: {
+                                        indentation: false,
+                                    },
+                                    folding: true,
+                                    lineNumbersMinChars: 3,
+                                    renderValidationDecorations: 'off',
+                                    lineDecorationsWidth: 0,
+                                    overviewRulerBorder: false,
+                                    overviewRulerLanes: 0,
+                                    hideCursorInOverviewRuler: true,
+                                    contextmenu: false,
 
-                                scrollbar: {
-                                    vertical: 'hidden',
-                                    horizontal: 'hidden',
-                                    alwaysConsumeMouseWheel: false,
-                                },
-                            }}
-                            className="size-full min-h-40"
-                        />
-                    </Suspense>
+                                    scrollbar: {
+                                        vertical: 'hidden',
+                                        horizontal: 'hidden',
+                                        alwaysConsumeMouseWheel: false,
+                                    },
+                                }}
+                                className="size-full min-h-40"
+                            />
+                        </Suspense>
+                    </div>
                 </div>
 
                 {errorMessage ||
@@ -596,6 +664,10 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
             isAutoFixing,
             handleErrorClick,
             setScriptResult,
+            dbmlFolder,
+            closeDBMLFolder,
+            folderActivePath,
+            handleFolderFileChange,
         ]
     );
 

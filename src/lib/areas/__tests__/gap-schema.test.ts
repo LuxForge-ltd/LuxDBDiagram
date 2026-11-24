@@ -42,61 +42,68 @@ interface CompilerDiag {
     location?: { start?: { line?: number } };
 }
 
-describe.skipIf(!available)('GAP schema (local only)', () => {
-    /**
-     * The domain files are the operator's working files and may contain broken references
-     * at any moment. The test therefore checks the behaviour that matters: the files merge
-     * into one schema with no conflicting definitions, references across files resolve, and
-     * any reference that cannot resolve is reported with its own file and line.
-     */
-    it('merges the domain files into one schema and locates broken references', async () => {
-        const files = readDomainFiles();
-        const merged = mergeDBMLFiles(files);
+// A real 60-table schema parsed several times; under the full suite's load it can take more
+// than vitest's default 5 seconds.
+describe.skipIf(!available)(
+    'GAP schema (local only)',
+    { timeout: 30_000 },
+    () => {
+        /**
+         * The domain files are the operator's working files and may contain broken references
+         * at any moment. The test therefore checks the behaviour that matters: the files merge
+         * into one schema with no conflicting definitions, references across files resolve, and
+         * any reference that cannot resolve is reported with its own file and line.
+         */
+        it('merges the domain files into one schema and locates broken references', async () => {
+            const files = readDomainFiles();
+            const merged = mergeDBMLFiles(files);
 
-        expect(merged.issues.filter((i) => i.severity === 'error')).toEqual([]);
-
-        try {
-            const diagram = await importDBMLToDiagram(merged.content, {
-                databaseType: DatabaseType.POSTGRESQL,
-            });
-            const expectedTables = files.reduce(
-                (sum, file) => sum + countTables(file.content),
-                0
+            expect(merged.issues.filter((i) => i.severity === 'error')).toEqual(
+                []
             );
-            expect(diagram.tables).toHaveLength(expectedTables);
-            expect(diagram.relationships!.length).toBeGreaterThan(100);
-        } catch (error) {
-            const diags = (error as { diags?: CompilerDiag[] }).diags ?? [];
-            expect(diags.length).toBeGreaterThan(0);
 
-            const located = diags.map((diag) => ({
-                message: diag.message,
-                at: locateMergedLine(
-                    merged.files,
-                    diag.location?.start?.line ?? 0
-                ),
-            }));
-            // Only genuinely missing tables may fail the merged import, and each must be
-            // traced back to the domain file and line that references it.
-            for (const problem of located) {
-                expect(problem.message).toMatch(/Can not find Table/);
-                expect(problem.at?.file).toMatch(/\.dbml$/);
+            try {
+                const diagram = await importDBMLToDiagram(merged.content, {
+                    databaseType: DatabaseType.POSTGRESQL,
+                });
+                const expectedTables = files.reduce(
+                    (sum, file) => sum + countTables(file.content),
+                    0
+                );
+                expect(diagram.tables).toHaveLength(expectedTables);
+                expect(diagram.relationships!.length).toBeGreaterThan(100);
+            } catch (error) {
+                const diags = (error as { diags?: CompilerDiag[] }).diags ?? [];
+                expect(diags.length).toBeGreaterThan(0);
+
+                const located = diags.map((diag) => ({
+                    message: diag.message,
+                    at: locateMergedLine(
+                        merged.files,
+                        diag.location?.start?.line ?? 0
+                    ),
+                }));
+                // Only genuinely missing tables may fail the merged import, and each must be
+                // traced back to the domain file and line that references it.
+                for (const problem of located) {
+                    expect(problem.message).toMatch(/Can not find Table/);
+                    expect(problem.at?.file).toMatch(/\.dbml$/);
+                }
+                console.warn(
+                    'GAP domain files reference missing tables:',
+                    located
+                        .map((p) => `${p.at?.file}:${p.at?.line} ${p.message}`)
+                        .join('; ')
+                );
             }
-            console.warn(
-                'GAP domain files reference missing tables:',
-                located
-                    .map((p) => `${p.at?.file}:${p.at?.line} ${p.message}`)
-                    .join('; ')
-            );
-        }
-    });
+        });
 
-    it('imports the combined file with Areas, sharing users between them', async () => {
-        const combined = readFileSync(
-            join(gapDir!, 'gap_combined.dbml'),
-            'utf8'
-        );
-        const areas = `
+        it('imports the combined file with Areas, sharing users between them', async () => {
+            const combined = readFileSync(
+                join(gapDir!, 'gap_combined.dbml'),
+                'utf8'
+            );
+            const areas = `
 Area "Users" {
     users
     user_auth_identities
@@ -116,119 +123,131 @@ Area "Finances" {
     bank_accounts
     users
 }`;
-        let issues: DBMLImportIssue[] = [];
-        const diagram = await importDBMLToDiagram(combined + areas, {
-            databaseType: DatabaseType.POSTGRESQL,
-            onIssues: (found) => (issues = found),
+            let issues: DBMLImportIssue[] = [];
+            const diagram = await importDBMLToDiagram(combined + areas, {
+                databaseType: DatabaseType.POSTGRESQL,
+                onIssues: (found) => (issues = found),
+            });
+            const users = diagram.tables!.find(
+                (table) => table.name === 'users'
+            )!;
+
+            expect(diagram.areaViews!.map((area) => area.name)).toEqual([
+                'Users',
+                'Matches',
+                'Finances',
+            ]);
+            expect(
+                diagram.areaViews!.every((area) =>
+                    area.tables.some(
+                        (instance) => instance.tableId === users.id
+                    )
+                )
+            ).toBe(true);
+            expect(
+                diagram.tables!.filter((t) => t.name === 'users')
+            ).toHaveLength(1);
+            expect(issues.filter((i) => i.code.startsWith('area_'))).toEqual(
+                []
+            );
+            expect(issues.map((i) => i.code)).toContain('comments_not_kept');
         });
-        const users = diagram.tables!.find((table) => table.name === 'users')!;
 
-        expect(diagram.areaViews!.map((area) => area.name)).toEqual([
-            'Users',
-            'Matches',
-            'Finances',
-        ]);
-        expect(
-            diagram.areaViews!.every((area) =>
-                area.tables.some((instance) => instance.tableId === users.id)
-            )
-        ).toBe(true);
-        expect(diagram.tables!.filter((t) => t.name === 'users')).toHaveLength(
-            1
-        );
-        expect(issues.filter((i) => i.code.startsWith('area_'))).toEqual([]);
-        expect(issues.map((i) => i.code)).toContain('comments_not_kept');
-    });
-
-    it('groups references from the Matches Area to users into one Float', async () => {
-        const combined = readFileSync(
-            join(gapDir!, 'gap_combined.dbml'),
-            'utf8'
-        );
-        const diagram = await importDBMLToDiagram(
-            `${combined}
+        it('groups references from the Matches Area to users into one Float', async () => {
+            const combined = readFileSync(
+                join(gapDir!, 'gap_combined.dbml'),
+                'utf8'
+            );
+            const diagram = await importDBMLToDiagram(
+                `${combined}
 Area "Matches" {
   matches
   match_teams
   match_team_player
 }`,
-            { databaseType: DatabaseType.POSTGRESQL }
-        );
-        const area = diagram.areaViews![0];
-        const projection = projectAreaView({
-            areaView: area,
-            tables: diagram.tables!,
-            relationships: diagram.relationships!,
-            dependencies: [],
-        });
-        const cards = resolveFloatCards({
-            crossRelationships: projection.crossRelationships,
-            tables: diagram.tables!,
-            instances: area.tables,
-        });
-        const usersFloats = cards.filter((card) => card.tableName === 'users');
+                { databaseType: DatabaseType.POSTGRESQL }
+            );
+            const area = diagram.areaViews![0];
+            const projection = projectAreaView({
+                areaView: area,
+                tables: diagram.tables!,
+                relationships: diagram.relationships!,
+                dependencies: [],
+            });
+            const cards = resolveFloatCards({
+                crossRelationships: projection.crossRelationships,
+                tables: diagram.tables!,
+                instances: area.tables,
+            });
+            const usersFloats = cards.filter(
+                (card) => card.tableName === 'users'
+            );
 
-        expect(usersFloats).toHaveLength(1);
-        expect(usersFloats[0].rows.length).toBeGreaterThanOrEqual(3);
-        expect(
-            usersFloats[0].rows.every(
-                (row) =>
-                    row.referenced.tableName === 'users' &&
-                    row.direction === 'outgoing'
-            )
-        ).toBe(true);
-        // Every relationship crossing the Area appears on exactly one Float row.
-        expect(cards.flatMap((card) => card.rows).length).toBe(
-            projection.crossRelationships.length
-        );
-    });
-    it('round-trips the GAP schema and its Areas through LuxDBDiagram DBML', async () => {
-        const combined = readFileSync(
-            join(gapDir!, 'gap_combined.dbml'),
-            'utf8'
-        );
-        const areas = [
-            'Area "Users" [color: #b067e9] {',
-            '    users',
-            '    user_auth_identities',
-            '}',
-            'Area "Matches" [floats: outgoing] {',
-            '    matches',
-            '    match_teams',
-            '    users',
-            '}',
-        ].join('\n');
-        const first = await importDBMLToDiagram(`${combined}\n${areas}`, {
-            databaseType: DatabaseType.POSTGRESQL,
-        });
-        const exported = exportDiagramAsDBML(first, { withAreas: true });
-        const second = await importDBMLToDiagram(exported.content, {
-            databaseType: DatabaseType.POSTGRESQL,
-        });
-
-        const tableSummary = (d: typeof first) =>
-            d
-                .tables!.map(
-                    (t) => `${t.name}:${t.fields.map((f) => f.name).join(',')}`
+            expect(usersFloats).toHaveLength(1);
+            expect(usersFloats[0].rows.length).toBeGreaterThanOrEqual(3);
+            expect(
+                usersFloats[0].rows.every(
+                    (row) =>
+                        row.referenced.tableName === 'users' &&
+                        row.direction === 'outgoing'
                 )
-                .sort();
-        const areaSummary = (d: typeof first) =>
-            d.areaViews!.map((area) => ({
-                name: area.name,
-                color: area.color,
-                floatFilter: effectiveFloatFilter(area.floatFilter),
-                tables: area.tables.map((instance) => ({
-                    name: d.tables!.find((t) => t.id === instance.tableId)!
-                        .name,
-                    x: Math.round(instance.x),
-                    y: Math.round(instance.y),
-                })),
-            }));
+            ).toBe(true);
+            // Every relationship crossing the Area appears on exactly one Float row.
+            expect(cards.flatMap((card) => card.rows).length).toBe(
+                projection.crossRelationships.length
+            );
+        });
+        it('round-trips the GAP schema and its Areas through LuxDBDiagram DBML', async () => {
+            const combined = readFileSync(
+                join(gapDir!, 'gap_combined.dbml'),
+                'utf8'
+            );
+            const areas = [
+                'Area "Users" [color: #b067e9] {',
+                '    users',
+                '    user_auth_identities',
+                '}',
+                'Area "Matches" [floats: outgoing] {',
+                '    matches',
+                '    match_teams',
+                '    users',
+                '}',
+            ].join('\n');
+            const first = await importDBMLToDiagram(`${combined}\n${areas}`, {
+                databaseType: DatabaseType.POSTGRESQL,
+            });
+            const exported = exportDiagramAsDBML(first, { withAreas: true });
+            const second = await importDBMLToDiagram(exported.content, {
+                databaseType: DatabaseType.POSTGRESQL,
+            });
 
-        expect(exported.warnings).toEqual([]);
-        expect(second.tables).toHaveLength(first.tables!.length);
-        expect(second.relationships).toHaveLength(first.relationships!.length);
-        expect(tableSummary(second)).toEqual(tableSummary(first));
-        expect(areaSummary(second)).toEqual(areaSummary(first));
-    });
-});
+            const tableSummary = (d: typeof first) =>
+                d
+                    .tables!.map(
+                        (t) =>
+                            `${t.name}:${t.fields.map((f) => f.name).join(',')}`
+                    )
+                    .sort();
+            const areaSummary = (d: typeof first) =>
+                d.areaViews!.map((area) => ({
+                    name: area.name,
+                    color: area.color,
+                    floatFilter: effectiveFloatFilter(area.floatFilter),
+                    tables: area.tables.map((instance) => ({
+                        name: d.tables!.find((t) => t.id === instance.tableId)!
+                            .name,
+                        x: Math.round(instance.x),
+                        y: Math.round(instance.y),
+                    })),
+                }));
+
+            expect(exported.warnings).toEqual([]);
+            expect(second.tables).toHaveLength(first.tables!.length);
+            expect(second.relationships).toHaveLength(
+                first.relationships!.length
+            );
+            expect(tableSummary(second)).toEqual(tableSummary(first));
+            expect(areaSummary(second)).toEqual(areaSummary(first));
+        });
+    }
+);

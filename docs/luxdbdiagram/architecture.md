@@ -44,6 +44,8 @@ interface AreaView {
     order: number;           // tab order; drives Dupe numbering and Float navigation
     tables: { tableId: string; x: number; y: number }[];          // at most one per table
     floats?: { tableId: string; x: number; y: number; expanded?: boolean }[];
+    floatFilter?: 'all' | 'outgoing'; // Outgoing when not set
+    fileName?: string;       // the schema file the Area stands for (folder import)
     createdAt: number;
 }
 ```
@@ -90,6 +92,24 @@ files is kept once with a warning; two different definitions of the same table s
 locations reported. Errors in merged text name the original file and line, for example
 `Can not find Table 'match_team_players' (finances.dbml, line 78)`. A file that holds only Area blocks
 can be loaded alongside the schema files.
+
+### A folder of files (one Area per file)
+
+**Open folder…** opens a folder and lists its `.dbml` files, including those in subfolders. Edge and Chrome
+use their folder picker; other browsers use a folder upload.
+
+- **Which files are imported.** Each ticked file is imported. A file that repeats tables from at least two
+  smaller files (a whole-schema copy kept beside per-domain files, such as GAP's `schema.dbml` and
+  `gap_combined.dbml`) starts unticked.
+- **Editing before import.** Clicking a file shows it in the import editor, where it can be edited.
+  **Combined import** shows, read-only, exactly what will be imported.
+- **Areas from files.** The import is the ticked files combined as above, followed by one generated
+  `Area "<file name>" [file: "<path>"]` block per file listing the tables that file defines. A file that
+  writes its own Area blocks gets none.
+- **Shared and conflicting tables.** A table defined identically in several files is one table shown by
+  each of those files' Areas. Different definitions stop the import, naming both files.
+- **File names.** An Area keeps its file name (`fileName`, written as the `file:` setting), so the diagram
+  remembers which file each Area stands for. The file setting must be a relative path inside the folder.
 
 ### Export
 

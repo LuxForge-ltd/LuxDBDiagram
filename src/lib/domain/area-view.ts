@@ -49,6 +49,12 @@ export interface AreaView {
      * relationship that leaves the Area.
      */
     floatFilter?: AreaFloatFilter | null;
+    /**
+     * The schema file this Area stands for (for example `users.dbml`, or a path inside an
+     * opened folder). An Area with a file name is written as that file, holding the
+     * definitions of every table the Area shows.
+     */
+    fileName?: string | null;
     createdAt: number;
 }
 
@@ -90,5 +96,6 @@ export const areaViewSchema: z.ZodType<AreaView> = z.object({
     tables: z.array(areaViewTableInstanceSchema),
     floats: z.array(areaViewFloatLayoutSchema).or(z.null()).optional(),
     floatFilter: z.enum(['all', 'outgoing']).or(z.null()).optional(),
+    fileName: z.string().or(z.null()).optional(),
     createdAt: z.number(),
 });

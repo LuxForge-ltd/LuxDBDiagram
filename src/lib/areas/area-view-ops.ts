@@ -121,6 +121,7 @@ export const buildAreaView = (
         ...(attributes.floatFilter
             ? { floatFilter: attributes.floatFilter }
             : {}),
+        ...(attributes.fileName ? { fileName: attributes.fileName } : {}),
     };
 };
 
