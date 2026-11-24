@@ -7,7 +7,9 @@ one enormous diagram.
 
 The guiding rule is **one schema, many views**: the database schema (tables, columns, indexes,
 constraints, relationships) has exactly one definition. Everything LuxDBDiagram adds is presentation
-metadata layered on top of it.
+metadata layered on top of it. When the diagram is saved as files (one per Area), each file holds a copy
+of the definitions of the tables its Area shows; opening the files merges identical copies back into the
+one definition.
 
 ## Concepts
 
@@ -110,6 +112,36 @@ use their folder picker; other browsers use a folder upload.
   each of those files' Areas. Different definitions stop the import, naming both files.
 - **File names.** An Area keeps its file name (`fileName`, written as the `file:` setting), so the diagram
   remembers which file each Area stands for. The file setting must be a relative path inside the folder.
+
+### A diagram as files (one file per Area)
+
+**Actions → Export as → LuxDBDiag files (one per Area)…** writes the diagram as a folder
+(`src/lib/areas/area-files.ts`):
+
+- **Area files.** Each Area is one file: its stored `fileName`, or a safe name made from the Area name.
+  The file holds every table the Area shows, every relationship that touches those tables (as `Ref`
+  lines) and the enums.
+  - Adding a table to an Area adds its definition to that file.
+  - A table in two Areas is written, identically, in both.
+  - Relationships between files appear identically in each file that holds one of their tables.
+- **Unassigned tables.** Tables that no Area shows go to `unassigned.dbml`, so saving never drops a table.
+- **The Areas file.** `luxdbdiag.areas.dbml` holds the Area blocks (colours, positions, Floats, Float
+  filter), each with its `file:`, so the table files stay plain DBML that any DBML tool reads. When the
+  folder is opened, a file named by an Area block's `file:` gets no generated Area.
+- **Same text in every file.** Each file is written by ChartDB's exporter on a part of the diagram. Every
+  relationship is given a fixed name first, and the exporter's position prefix (`fk_<n>_`) is removed, so
+  the same relationship is the same `Ref` line in every file. Without that, the copies would not be
+  recognised as repeats and DBML would reject them.
+- **Writing.** Edge and Chrome write into a folder the user picks (File System Access API), replacing files
+  of the same name and leaving other files alone, after a confirmation that lists the files. Other browsers
+  download the files.
+- **Viewing.** The DBML panel's **Show** picker shows any Area's file, read-only; the whole schema stays
+  ChartDB's editable view.
+- **Round trip.** Saving and reopening gives back the same tables, relationships, enums, Areas, file names
+  and layout. Tested on a sample schema and on GAP's domain files.
+- **Limits.** `//` comments are not kept (ChartDB's model has no place for them). Inline `ref:` settings
+  are written as `Ref` lines. Editing a single file and applying it to the diagram is not supported yet:
+  edit the whole schema or the canvas.
 
 ### Export
 
