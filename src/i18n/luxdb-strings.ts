@@ -45,6 +45,36 @@ export const luxdbStrings = {
             already_in_area_description:
                 '{{tables}} already appears in this Area. A table appears at most once per Area.',
         },
+        floats: {
+            reference_count_one: '{{count}} ref',
+            reference_count_other: '{{count}} refs',
+            show_more: 'Show {{count}} more',
+            show_less: 'Show less',
+            home_area: 'First shown in {{area}}',
+            no_area: 'Not in any Area',
+            no_area_short: 'No Area',
+            row_title: '{{from}} → {{to}}. Click to go to {{table}}.',
+            not_in_area: '"{{table}}" is not in any Area yet.',
+            add_here: 'Add it to this Area',
+            show_in_all_tables: 'Show it in All tables',
+            incoming_title: 'Referenced from outside this Area',
+            referenced_by_one: '← {{count}} table',
+            referenced_by_other: '← {{count}} tables',
+            and_more: 'and {{count}} more',
+            show_incoming: 'Show these as Floats',
+            count_one: '{{count}} Float',
+            count_other: '{{count}} Floats',
+            controls_title:
+                'Floats stand in for tables outside this Area that its tables are related to',
+            filter_all: 'All',
+            filter_all_title:
+                'Show a Float for every relationship that leaves this Area',
+            filter_outgoing: 'Outgoing',
+            filter_outgoing_title_one:
+                'Show Floats only for tables this Area refers to; the {{count}} reference coming in is summarised on one card',
+            filter_outgoing_title_other:
+                'Show Floats only for tables this Area refers to; the {{count}} references coming in are summarised on one card',
+        },
         dupes: {
             go_to: 'Show it in {{area}} [{{number}}]',
             current: 'Shown here, in {{area}}',

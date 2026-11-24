@@ -13,6 +13,8 @@ import { locateMergedLine, mergeDBMLFiles } from '../multi-file-dbml';
 import { importDBMLToDiagram } from '@/lib/dbml/dbml-import/dbml-import';
 import { DatabaseType } from '@/lib/domain/database-type';
 import type { DBMLImportIssue } from '../area-dbml';
+import { projectAreaView } from '../resolve-area-view';
+import { resolveFloatCards } from '../floats';
 
 const gapDir = process.env.LUXDB_GAP_SCHEMA_DIR;
 const available = !!gapDir && existsSync(gapDir);
@@ -134,5 +136,48 @@ Area "Finances" {
         );
         expect(issues.filter((i) => i.code.startsWith('area_'))).toEqual([]);
         expect(issues.map((i) => i.code)).toContain('comments_not_kept');
+    });
+
+    it('groups references from the Matches Area to users into one Float', async () => {
+        const combined = readFileSync(
+            join(gapDir!, 'gap_combined.dbml'),
+            'utf8'
+        );
+        const diagram = await importDBMLToDiagram(
+            `${combined}
+Area "Matches" {
+  matches
+  match_teams
+  match_team_player
+}`,
+            { databaseType: DatabaseType.POSTGRESQL }
+        );
+        const area = diagram.areaViews![0];
+        const projection = projectAreaView({
+            areaView: area,
+            tables: diagram.tables!,
+            relationships: diagram.relationships!,
+            dependencies: [],
+        });
+        const cards = resolveFloatCards({
+            crossRelationships: projection.crossRelationships,
+            tables: diagram.tables!,
+            instances: area.tables,
+        });
+        const usersFloats = cards.filter((card) => card.tableName === 'users');
+
+        expect(usersFloats).toHaveLength(1);
+        expect(usersFloats[0].rows.length).toBeGreaterThanOrEqual(3);
+        expect(
+            usersFloats[0].rows.every(
+                (row) =>
+                    row.referenced.tableName === 'users' &&
+                    row.direction === 'outgoing'
+            )
+        ).toBe(true);
+        // Every relationship crossing the Area appears on exactly one Float row.
+        expect(cards.flatMap((card) => card.rows).length).toBe(
+            projection.crossRelationships.length
+        );
     });
 });

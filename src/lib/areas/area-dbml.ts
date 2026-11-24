@@ -23,6 +23,7 @@ import type {
     AreaView,
     AreaViewFloatLayout,
     AreaViewTableInstance,
+    AreaFloatFilter,
 } from '@/lib/domain/area-view';
 import {
     blankRange,
@@ -75,6 +76,7 @@ export interface ParsedAreaEntry {
 export interface ParsedArea {
     name: string;
     color?: string;
+    floatFilter?: AreaFloatFilter;
     entries: ParsedAreaEntry[];
     line: number;
 }
@@ -191,6 +193,7 @@ const parseAreaBlock = (
     }
 
     let color: string | undefined;
+    let floatFilter: AreaFloatFilter | undefined;
     for (const setting of parseSettings(headerMatch[2])) {
         if (setting.key === 'color' && typeof setting.value === 'string') {
             if (COLOR_PATTERN.test(setting.value)) {
@@ -203,6 +206,11 @@ const parseAreaBlock = (
                     ...headerPosition,
                 });
             }
+        } else if (
+            setting.key === 'floats' &&
+            (setting.value === 'all' || setting.value === 'outgoing')
+        ) {
+            floatFilter = setting.value;
         } else {
             issues.push({
                 severity: 'warning',
@@ -230,7 +238,7 @@ const parseAreaBlock = (
         if (entry) entries.push(entry);
     });
 
-    return { name, color, entries };
+    return { name, color, floatFilter, entries };
 };
 
 /** Parses one line of an Area block, pushing problems onto `issues`. */
@@ -446,6 +454,7 @@ export const resolveParsedAreas = (
                 {
                     name: area.name,
                     color: area.color,
+                    floatFilter: area.floatFilter ?? null,
                     order: areaViews.length,
                     tables: laidOut,
                     floats: floats.filter(
@@ -500,7 +509,9 @@ export const serializeAreaViews = (
         .map((area) => {
             const lines: string[] = [];
             const name = area.name.replace(/(["\\])/g, '\\$1');
-            lines.push(`Area "${name}" [color: ${area.color}] {`);
+            const floats =
+                area.floatFilter === 'outgoing' ? ', floats: outgoing' : '';
+            lines.push(`Area "${name}" [color: ${area.color}${floats}] {`);
 
             for (const instance of area.tables) {
                 const table = tablesById.get(instance.tableId);
