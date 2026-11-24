@@ -2,3 +2,6 @@
 # "exec /entrypoint.sh: no such file or directory" (#1126)
 *.sh text eol=lf
 default.conf.template text eol=lf
+
+# LuxForge agent governance: the Claude guard hook must keep LF endings.
+.claude/hooks/*.sh text eol=lf
