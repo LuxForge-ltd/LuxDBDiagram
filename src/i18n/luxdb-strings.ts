@@ -45,6 +45,10 @@ export const luxdbStrings = {
             already_in_area_description:
                 '{{tables}} already appears in this Area. A table appears at most once per Area.',
         },
+        dupes: {
+            go_to: 'Show it in {{area}} [{{number}}]',
+            current: 'Shown here, in {{area}}',
+        },
         library: {
             title: 'Table library',
             search: 'Search tables…',

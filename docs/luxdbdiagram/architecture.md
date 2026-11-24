@@ -111,6 +111,13 @@ two different definitions of the same table stop the import with both locations 
   - the table filter and the "hide views" setting do not apply, because the Area is itself the
     selection of tables;
   - collapsed tables keep the columns that have a line in this Area visible.
+- **Dupe markers.** A table shown in more than one Area has small numbered markers in its header,
+  one per Area (`users [1] [2] [3]`). Numbers follow Area order, so they are the same in every view;
+  the marker for the open Area is filled with its colour. Clicking a number opens that Area, centres
+  the table and briefly highlights it. In the "All tables" view, every table that is in at least one
+  Area shows its markers, as a way into the Areas.
+- Navigation (markers, and Float rows in a later phase) waits until the target Area is on screen
+  before centring, because a table's node has the same id in every view.
 - Undo and redo cover Area changes (create, delete, rename, recolour, reorder, membership, moves).
 - Import shows Area problems (missing or ambiguous tables, repeats, unknown settings) and lost `//`
   comments as warnings before the import is confirmed.

@@ -21,7 +21,20 @@ export interface AreaFocusRequest {
     requestId: number;
     tableId: string;
     fieldId?: string;
+    /**
+     * The view the table must be shown in (an Area id, or null for "All tables"). A table's
+     * node has the same id in every view, so focusing waits until this view is on screen.
+     */
+    areaViewId: string | null;
 }
+
+/** What callers pass when asking for focus; the view defaults to the one now open. */
+export type AreaFocusTarget = Omit<
+    AreaFocusRequest,
+    'requestId' | 'areaViewId'
+> & {
+    areaViewId?: string | null;
+};
 
 /** A short-lived highlight on a table or column, after navigation. */
 export interface AreaHighlight {
@@ -40,7 +53,7 @@ export interface AreaViewContext {
      */
     selectAreaView: (
         areaViewId: string | null,
-        options?: { focus?: Omit<AreaFocusRequest, 'requestId'> }
+        options?: { focus?: Omit<AreaFocusTarget, 'areaViewId'> }
     ) => void;
     /** Areas visited before the current one, most recent last. */
     backHistory: (string | null)[];
@@ -52,7 +65,7 @@ export interface AreaViewContext {
     getViewport: (key: string) => Viewport | undefined;
 
     focusRequest: AreaFocusRequest | null;
-    requestFocus: (target: Omit<AreaFocusRequest, 'requestId'>) => void;
+    requestFocus: (target: AreaFocusTarget) => void;
     clearFocusRequest: () => void;
 
     highlight: AreaHighlight | null;
