@@ -27,6 +27,8 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCanvas } from '@/hooks/use-canvas';
 import { useReactFlow, useStore } from '@xyflow/react';
+import { useAreaView } from '@/hooks/use-area-view';
+import { AreaMembershipMenuItems } from '../area-view/area-membership-menu-items';
 
 export interface TableNodeContextMenuProps {
     table: DBTable;
@@ -51,6 +53,7 @@ export const TableNodeContextMenu: React.FC<
     const { isMd: isDesktop } = useBreakpoint('md');
     const { setEditTableModeTable, startFloatingEdgeCreation } = useCanvas();
     const { getNodes } = useReactFlow();
+    const { currentAreaViewId } = useAreaView();
 
     // Reactively detect multi-selection
     const selectedTableIds = useStore((state) =>
@@ -249,64 +252,76 @@ export const TableNodeContextMenu: React.FC<
                     <Workflow className="size-3.5" />
                 </ContextMenuItem>
                 <ContextMenuSeparator />
-                <ContextMenuSub>
-                    <ContextMenuSubTrigger className="flex items-center gap-3">
-                        <span>
-                            {isMultiSelect
-                                ? `${t('table_node_context_menu.move_to_area')} (${selectedTableIds.length})`
-                                : t('table_node_context_menu.move_to_area')}
-                        </span>
-                        <SquareArrowOutUpRight className="ml-auto size-3.5" />
-                    </ContextMenuSubTrigger>
-                    <ContextMenuSubContent>
-                        <ContextMenuItem
-                            onClick={createAreaHandler}
-                            className="flex items-center gap-2"
-                        >
-                            <Plus className="size-3.5" />
-                            <span>{t('canvas_context_menu.new_area')}</span>
-                        </ContextMenuItem>
-                        {areas.length > 0 && <ContextMenuSeparator />}
-                        {areas.map((area) => (
+                {/* LuxDBDiagram: Area membership (remove from this Area, add to others). */}
+                <AreaMembershipMenuItems
+                    tableIds={isMultiSelect ? selectedTableIds : [table.id]}
+                />
+                {/* Groups are drawn only in the "All tables" view. */}
+                {!currentAreaViewId ? <ContextMenuSeparator /> : null}
+                {!currentAreaViewId ? (
+                    <ContextMenuSub>
+                        <ContextMenuSubTrigger className="flex items-center gap-3">
+                            <span>
+                                {isMultiSelect
+                                    ? `${t('table_node_context_menu.move_to_area')} (${selectedTableIds.length})`
+                                    : t('table_node_context_menu.move_to_area')}
+                            </span>
+                            <SquareArrowOutUpRight className="ml-auto size-3.5" />
+                        </ContextMenuSubTrigger>
+                        <ContextMenuSubContent>
                             <ContextMenuItem
-                                key={area.id}
-                                onClick={() => moveToAreaHandler(area.id)}
+                                onClick={createAreaHandler}
                                 className="flex items-center gap-2"
                             >
-                                <div
-                                    className="size-2.5 shrink-0 rounded-full"
-                                    style={{
-                                        backgroundColor: area.color,
-                                    }}
-                                />
-                                <span>{area.name}</span>
-                                {!isMultiSelect &&
-                                    table.parentAreaId === area.id && (
-                                        <Check className="ml-auto size-3.5" />
-                                    )}
+                                <Plus className="size-3.5" />
+                                <span>{t('canvas_context_menu.new_area')}</span>
                             </ContextMenuItem>
-                        ))}
-                        {areas.length > 0 && (
-                            <>
-                                <ContextMenuSeparator />
+                            {areas.length > 0 && <ContextMenuSeparator />}
+                            {areas.map((area) => (
                                 <ContextMenuItem
-                                    onClick={() => moveToAreaHandler(null)}
-                                    disabled={
-                                        !isMultiSelect && !table.parentAreaId
-                                    }
+                                    key={area.id}
+                                    onClick={() => moveToAreaHandler(area.id)}
                                     className="flex items-center gap-2"
                                 >
-                                    <span>
-                                        {t('table_node_context_menu.no_area')}
-                                    </span>
-                                    {!isMultiSelect && !table.parentAreaId && (
-                                        <Check className="ml-auto size-3.5" />
-                                    )}
+                                    <div
+                                        className="size-2.5 shrink-0 rounded-full"
+                                        style={{
+                                            backgroundColor: area.color,
+                                        }}
+                                    />
+                                    <span>{area.name}</span>
+                                    {!isMultiSelect &&
+                                        table.parentAreaId === area.id && (
+                                            <Check className="ml-auto size-3.5" />
+                                        )}
                                 </ContextMenuItem>
-                            </>
-                        )}
-                    </ContextMenuSubContent>
-                </ContextMenuSub>
+                            ))}
+                            {areas.length > 0 && (
+                                <>
+                                    <ContextMenuSeparator />
+                                    <ContextMenuItem
+                                        onClick={() => moveToAreaHandler(null)}
+                                        disabled={
+                                            !isMultiSelect &&
+                                            !table.parentAreaId
+                                        }
+                                        className="flex items-center gap-2"
+                                    >
+                                        <span>
+                                            {t(
+                                                'table_node_context_menu.no_area'
+                                            )}
+                                        </span>
+                                        {!isMultiSelect &&
+                                            !table.parentAreaId && (
+                                                <Check className="ml-auto size-3.5" />
+                                            )}
+                                    </ContextMenuItem>
+                                </>
+                            )}
+                        </ContextMenuSubContent>
+                    </ContextMenuSub>
+                ) : null}
                 <ContextMenuSeparator />
                 <ContextMenuItem
                     onClick={removeTableHandler}

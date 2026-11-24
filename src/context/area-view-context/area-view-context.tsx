@@ -57,6 +57,10 @@ export interface AreaViewContext {
 
     highlight: AreaHighlight | null;
     setHighlight: (target: Omit<AreaHighlight, 'highlightId'> | null) => void;
+
+    /** Tables being dragged on the canvas, so the table library can offer to take them back. */
+    draggingTableIds: string[];
+    setDraggingTableIds: (tableIds: string[]) => void;
 }
 
 export const areaViewContext = createContext<AreaViewContext>({
@@ -71,4 +75,6 @@ export const areaViewContext = createContext<AreaViewContext>({
     clearFocusRequest: emptyFn,
     highlight: null,
     setHighlight: emptyFn,
+    draggingTableIds: [],
+    setDraggingTableIds: emptyFn,
 });

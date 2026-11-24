@@ -70,6 +70,39 @@ export const layoutAreaInstances = ({
     );
 };
 
+/**
+ * Positions tables being added to an Area without a chosen position (for example from a menu
+ * or the table library's add button). Existing instances never move; new ones go below them,
+ * or are laid out together when the Area is empty.
+ *
+ * @param input The Area's current instances, the tables to add, and the canonical schema.
+ * @returns The new instances, with positions, in the order given. Tables already in the Area
+ *          are not included.
+ */
+export const placeNewInstances = ({
+    existing,
+    tableIds,
+    tables,
+    relationships,
+}: {
+    existing: readonly AreaViewTableInstance[];
+    tableIds: readonly string[];
+    tables: readonly DBTable[];
+    relationships: readonly DBRelationship[];
+}): AreaViewTableInstance[] => {
+    const present = new Set(existing.map((instance) => instance.tableId));
+    const toAdd = [...new Set(tableIds)].filter((id) => !present.has(id));
+    if (toAdd.length === 0) return [];
+
+    const laidOut = layoutAreaInstances({
+        instances: [...existing, ...toAdd.map((tableId) => ({ tableId }))],
+        tables,
+        relationships,
+    });
+    const added = new Set(toAdd);
+    return laidOut.filter((instance) => added.has(instance.tableId));
+};
+
 /** Lays out every instance with ChartDB's layout algorithm. */
 const layoutWholeArea = (
     instances: readonly PendingInstance[],

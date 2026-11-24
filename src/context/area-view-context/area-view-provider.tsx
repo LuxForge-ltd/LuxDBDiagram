@@ -60,6 +60,7 @@ export const AreaViewProvider: React.FC<React.PropsWithChildren> = ({
         null
     );
     const [highlight, setHighlightState] = useState<AreaHighlight | null>(null);
+    const [draggingTableIds, setDraggingTableIds] = useState<string[]>([]);
     const viewports = useRef(new Map<string, Viewport>());
     const counter = useRef(0);
     const loadedDiagramId = useRef<string | null>(null);
@@ -177,6 +178,8 @@ export const AreaViewProvider: React.FC<React.PropsWithChildren> = ({
             clearFocusRequest,
             highlight,
             setHighlight,
+            draggingTableIds,
+            setDraggingTableIds,
         }),
         [
             currentAreaViewId,
@@ -190,6 +193,7 @@ export const AreaViewProvider: React.FC<React.PropsWithChildren> = ({
             clearFocusRequest,
             highlight,
             setHighlight,
+            draggingTableIds,
         ]
     );
 
