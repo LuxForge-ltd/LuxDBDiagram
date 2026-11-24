@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     fileHeaderLine,
+    locateLineByFileHeaders,
     locateMergedLine,
     mergeDBMLFiles,
 } from '../multi-file-dbml';
@@ -139,5 +140,20 @@ describe('mergeDBMLFiles', () => {
             line: 1,
         });
         expect(locateMergedLine(merged.files, 1)).toBeNull();
+    });
+});
+
+describe('locateLineByFileHeaders', () => {
+    it('finds the source file and line from the merged text alone', () => {
+        const merged = mergeDBMLFiles([usersFile, matchesFile]);
+        const lines = merged.content.split('\n');
+        const refLine =
+            lines.findIndex((l) => l.includes('ref: > users.user_id')) + 1;
+
+        expect(locateLineByFileHeaders(merged.content, refLine)).toEqual({
+            file: 'matches.dbml',
+            line: 3,
+        });
+        expect(locateLineByFileHeaders('Table t {\n}', 1)).toBeNull();
     });
 });

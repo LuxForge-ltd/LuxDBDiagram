@@ -81,9 +81,25 @@ Area "Matches" {
 
 ### Multiple files
 
-Several `.dbml` files can be imported together. They are merged into one schema before parsing, so
-references across files resolve. A table defined identically in two files is kept once with a warning;
-two different definitions of the same table stop the import with both locations reported.
+Several `.dbml` files can be imported together with **Open files…** above the DBML import editor. They
+are merged into one schema before parsing, so references across files resolve; each file's part of the
+merged text starts with a `// ==== file: <name> ====` line. A table or enum defined identically in two
+files is kept once with a warning; two different definitions of the same table stop the import with both
+locations reported. Errors in merged text name the original file and line, for example
+`Can not find Table 'match_team_players' (finances.dbml, line 78)`. A file that holds only Area blocks
+can be loaded alongside the schema files.
+
+### Export
+
+**Actions → Export as** offers:
+
+- **DBML**: the schema exactly as ChartDB writes it, with no Area blocks, for any DBML tool.
+- **LuxDBDiagram DBML (with Areas)**: the same schema followed by the Area blocks, including table
+  positions, colours, Float positions and expanded state, and the Float filter.
+
+Both are written by ChartDB's own exporter for the schema part. Anything the exporter has to leave out
+(tables with no columns) is reported when exporting. Diagram JSON export also carries Areas, with table
+references remapped like the rest of the diagram.
 
 ## Working with Areas (editor)
 
@@ -170,6 +186,42 @@ express, so it is never guessed.
   only, so a Float row (and the ordinary relationship line) shows that pair.
 - Columns of database views have no connection points in ChartDB, so a relationship on a view
   column has no Float line (the row is still on the Float card).
+- "Duplicate" in ChartDB's Open dialog copies only a diagram's tables (not its relationships, notes,
+  Groups or Areas). Use diagram JSON export and import to copy a diagram with its Areas.
+- LuxDBDiagram's own text is English in every language (other languages fall back to it), and the
+  "Groups" label replaces "Areas" for ChartDB's rectangles in the English UI only.
+- Renaming a table in the DBML editor gives it a new identity in ChartDB, so it drops out of the Areas
+  it was in; add it back from the table library.
+
+## Acceptance criteria coverage
+
+How each of the brief's required tests is covered. Unit tests live in `src/lib/areas/__tests__/`; GAP
+tests run only with `LUXDB_GAP_SCHEMA_DIR` set; "browser" means checked by hand in the running editor on
+the GAP schema.
+
+| # | Criterion | Covered by |
+| --- | --- | --- |
+| 1 | Standard DBML imports without extensions | ChartDB's existing DBML import tests (unchanged, all passing); `round-trip.test.ts` |
+| 2 | Enhanced DBML with multiple Areas | `area-dbml.test.ts`; GAP test; browser |
+| 3 | Several DBML files resolve to one schema | `multi-file-dbml.test.ts`; GAP test (domain files); browser (10 files) |
+| 4 | A table appears in several Areas | `area-dbml.test.ts`; GAP test; browser |
+| 5 | A table cannot appear twice in one Area | `area-view-ops.test.ts`, `area-dbml.test.ts`, `area-layout.test.ts`; browser (library, menu) |
+| 6 | Area colours applied correctly | `resolve-area-view.test.ts`, `area-view-ops.test.ts`; browser |
+| 7 | Dragging a table into an Area adds it | browser (library drag onto the canvas) |
+| 8 | Removing an instance keeps the table | `area-view-ops.test.ts`, `resolve-area-view.test.ts`; browser (Delete key, drag back, menu) |
+| 9 | Same-Area relationships render normally | `resolve-area-view.test.ts`; browser |
+| 10 | Cross-Area relationships render as Floats | `floats.test.ts`; GAP test; browser |
+| 11 | Float rows show source, target and two-ended glyphs | `floats.test.ts` (cardinality); browser (glyphs) |
+| 12 | Lines connect real columns to the right Float rows | browser (row handles per relationship) |
+| 13 | A 20-relationship Float shows three rows and expands | `floats.test.ts`; browser |
+| 14 | Clicking a Float row reaches the destination column | browser (`transactions.match_id` → `matches.match_id`) |
+| 15 | Dupe numbers navigate correctly | `resolve-area-view.test.ts` (numbering); browser |
+| 16 | Canonical changes show in every Area | `resolve-area-view.test.ts`; `round-trip.test.ts` |
+| 17 | Area changes update Floats automatically | `floats.test.ts`; browser (adding `teams` replaced its Float) |
+| 18 | Layouts and colours survive reopening | browser (reload); `round-trip.test.ts` (JSON and DBML) |
+| 19 | Standard DBML export is ordinary DBML | `round-trip.test.ts` |
+| 20 | Enhanced export and reimport keep the metadata | `round-trip.test.ts`; GAP round-trip test |
+| — | Malformed files and missing tables | `area-dbml.test.ts`, `round-trip.test.ts`, `multi-file-dbml.test.ts` |
 
 ## Delivery
 

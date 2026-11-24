@@ -15,6 +15,7 @@ import {
 import { useChartDB } from '@/hooks/use-chartdb';
 import { useDialog } from '@/hooks/use-dialog';
 import { useExportImage } from '@/hooks/use-export-image';
+import { useDBMLFileExport } from '@/hooks/use-dbml-file-export';
 import { databaseTypeToLabelMap } from '@/lib/databases';
 import { DatabaseType } from '@/lib/domain/database-type';
 import {
@@ -65,6 +66,7 @@ export const Menu: React.FC<MenuProps> = () => {
     const { t } = useTranslation();
     const { redo, undo, hasRedo, hasUndo } = useHistory();
     const { exportImage } = useExportImage();
+    const exportDBMLFile = useDBMLFileExport();
     const navigate = useNavigate();
 
     const handleDeleteDiagramAction = useCallback(() => {
@@ -304,6 +306,14 @@ export const Menu: React.FC<MenuProps> = () => {
                             <MenubarSeparator />
                             <MenubarItem onClick={openExportDiagramDialog}>
                                 JSON
+                            </MenubarItem>
+                            {/* LuxDBDiagram: schema-only DBML, and DBML with Areas. */}
+                            <MenubarSeparator />
+                            <MenubarItem onClick={() => exportDBMLFile(false)}>
+                                DBML
+                            </MenubarItem>
+                            <MenubarItem onClick={() => exportDBMLFile(true)}>
+                                {t('luxdb.export.enhanced_dbml')}
                             </MenubarItem>
                         </MenubarSubContent>
                     </MenubarSub>

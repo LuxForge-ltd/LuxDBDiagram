@@ -15,6 +15,7 @@ import { DatabaseType } from '@/lib/domain/database-type';
 import type { DBMLImportIssue } from '../area-dbml';
 import { projectAreaView } from '../resolve-area-view';
 import { resolveFloatCards } from '../floats';
+import { exportDiagramAsDBML } from '../dbml-file-export';
 
 const gapDir = process.env.LUXDB_GAP_SCHEMA_DIR;
 const available = !!gapDir && existsSync(gapDir);
@@ -179,5 +180,54 @@ Area "Matches" {
         expect(cards.flatMap((card) => card.rows).length).toBe(
             projection.crossRelationships.length
         );
+    });
+    it('round-trips the GAP schema and its Areas through LuxDBDiagram DBML', async () => {
+        const combined = readFileSync(
+            join(gapDir!, 'gap_combined.dbml'),
+            'utf8'
+        );
+        const areas = [
+            'Area "Users" [color: #b067e9] {',
+            '    users',
+            '    user_auth_identities',
+            '}',
+            'Area "Matches" [floats: outgoing] {',
+            '    matches',
+            '    match_teams',
+            '    users',
+            '}',
+        ].join('\n');
+        const first = await importDBMLToDiagram(`${combined}\n${areas}`, {
+            databaseType: DatabaseType.POSTGRESQL,
+        });
+        const exported = exportDiagramAsDBML(first, { withAreas: true });
+        const second = await importDBMLToDiagram(exported.content, {
+            databaseType: DatabaseType.POSTGRESQL,
+        });
+
+        const tableSummary = (d: typeof first) =>
+            d
+                .tables!.map(
+                    (t) => `${t.name}:${t.fields.map((f) => f.name).join(',')}`
+                )
+                .sort();
+        const areaSummary = (d: typeof first) =>
+            d.areaViews!.map((area) => ({
+                name: area.name,
+                color: area.color,
+                floatFilter: area.floatFilter ?? 'all',
+                tables: area.tables.map((instance) => ({
+                    name: d.tables!.find((t) => t.id === instance.tableId)!
+                        .name,
+                    x: Math.round(instance.x),
+                    y: Math.round(instance.y),
+                })),
+            }));
+
+        expect(exported.warnings).toEqual([]);
+        expect(second.tables).toHaveLength(first.tables!.length);
+        expect(second.relationships).toHaveLength(first.relationships!.length);
+        expect(tableSummary(second)).toEqual(tableSummary(first));
+        expect(areaSummary(second)).toEqual(areaSummary(first));
     });
 });

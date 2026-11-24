@@ -47,6 +47,8 @@ import type { ImportMethod } from '@/lib/import-method/import-method';
 import { detectImportMethod } from '@/lib/import-method/detect-import-method';
 import { verifyDBML } from '@/lib/dbml/dbml-import/verify-dbml';
 import { importDBMLToDiagram } from '@/lib/dbml/dbml-import/dbml-import';
+import { locateLineByFileHeaders } from '@/lib/areas/multi-file-dbml';
+import { DBMLFilesButton } from './dbml-files-button';
 import { sqlImportToDiagram } from '@/lib/data/sql-import';
 import {
     clearErrorHighlight,
@@ -196,6 +198,11 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
                 if (validateResponse.parsedError) {
                     errorMsg = validateResponse.parsedError.message;
                     line = validateResponse.parsedError.line;
+                    // LuxDBDiagram: in merged files, also name the source file and line.
+                    const source = locateLineByFileHeaders(scriptResult, line);
+                    if (source) {
+                        errorMsg = `${errorMsg} (${source.file}, line ${source.line})`;
+                    }
                     highlightErrorLine({
                         error: validateResponse.parsedError,
                         model: editorRef.current?.getModel(),
@@ -502,12 +509,18 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
     const renderOutputTextArea = useCallback(
         () => (
             <div className="flex size-full flex-col gap-1 overflow-hidden rounded-md border p-1">
-                <div className="w-full text-center text-xs text-muted-foreground">
+                <div className="relative w-full text-center text-xs text-muted-foreground">
                     {importMethod === 'query'
                         ? 'Smart Query Output'
                         : importMethod === 'dbml'
                           ? 'DBML Script'
                           : 'SQL Script'}
+                    {/* LuxDBDiagram: open one or several .dbml files (merged into one schema). */}
+                    {importMethod === 'dbml' ? (
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                            <DBMLFilesButton onLoad={setScriptResult} />
+                        </div>
+                    ) : null}
                 </div>
                 <div className="flex-1 overflow-hidden">
                     <Suspense fallback={<Spinner />}>
@@ -582,6 +595,7 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
             sqlValidation,
             isAutoFixing,
             handleErrorClick,
+            setScriptResult,
         ]
     );
 
