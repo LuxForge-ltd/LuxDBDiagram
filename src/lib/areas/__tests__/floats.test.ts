@@ -333,10 +333,22 @@ describe('placeFloatCards', () => {
 });
 
 describe('applyFloatFilter', () => {
-    it('passes every card through for "all" (and by default)', () => {
+    it('passes every card through for "all"', () => {
         const cards = cardsFor(['users']);
-        expect(applyFloatFilter(cards, 'all').cards).toEqual(cards);
-        expect(applyFloatFilter(cards, undefined).incoming).toEqual([]);
+        expect(applyFloatFilter(cards, 'all')).toEqual({
+            cards,
+            incoming: [],
+        });
+    });
+
+    it('treats an Area with no stored filter as "outgoing" (the default)', () => {
+        const cards = cardsFor(['users', 'teams']);
+        expect(applyFloatFilter(cards, undefined)).toEqual(
+            applyFloatFilter(cards, 'outgoing')
+        );
+        expect(applyFloatFilter(cards, null).incoming.length).toBeGreaterThan(
+            0
+        );
     });
 
     it('summarises incoming references per shown column for "outgoing", dropping nothing', () => {

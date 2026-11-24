@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { locateMergedLine, mergeDBMLFiles } from '../multi-file-dbml';
 import { importDBMLToDiagram } from '@/lib/dbml/dbml-import/dbml-import';
 import { DatabaseType } from '@/lib/domain/database-type';
+import { effectiveFloatFilter } from '@/lib/domain/area-view';
 import type { DBMLImportIssue } from '../area-dbml';
 import { projectAreaView } from '../resolve-area-view';
 import { resolveFloatCards } from '../floats';
@@ -215,7 +216,7 @@ Area "Matches" {
             d.areaViews!.map((area) => ({
                 name: area.name,
                 color: area.color,
-                floatFilter: area.floatFilter ?? 'all',
+                floatFilter: effectiveFloatFilter(area.floatFilter),
                 tables: area.tables.map((instance) => ({
                     name: d.tables!.find((t) => t.id === instance.tableId)!
                         .name,

@@ -12,6 +12,7 @@ Handoff record for agent work in this repository, as required by LuxForge [AI Ag
 - 2026-11-24, Ben, Claude Code desktop app on joyeuse (brief "LuxDBDiagram — Implementation Brief v0.1.0"): inspect ChartDB, produce an implementation plan, then implement Areas, Dupes, Floats and enhanced DBML in phases.
 - 2026-11-24, Ben, same session (decision cards): the agent creates `Dev` from `main` at `ee95448`; the agent disables GitHub Actions on the repository with `gh api` (done: Actions permission `enabled=false`); the GAP schema is not copied into this public repository, and GAP tests read it from a local folder named by `LUXDB_GAP_SCHEMA_DIR`; ChartDB's rectangle areas are relabelled **Groups** in the UI only.
 - 2026-11-24, Ben, same session ("Approve, run all"): the six-phase plan is approved as a sequence. The agent carries out Phases 01 to 06 in order and, once each phase's checks pass on joyeuse, commits, pushes, opens the pull request to `Dev` and merges it. This authorises merging those six pull requests. The agent stops for any decision it cannot reasonably make.
+- 2026-11-24, Ben, same session (next-step card, "Yes, default Outgoing"): make Outgoing the default Float filter for Areas. Delivered as Phase 07; an Area with no stored filter now shows outgoing Floats, and enhanced DBML writes only `[floats: all]`. Commit, push, pull request and merge approved on 2026-11-24 ("Yes, merge it", same session).
 
 ## Phases
 
@@ -22,7 +23,8 @@ Handoff record for agent work in this repository, as required by LuxForge [AI Ag
 | 03 Visual membership management | `phase-03-visual-membership-management` | Merged into `Dev` (`b26a0fb`) | 0.0.3 | [#3](https://github.com/LuxForge-ltd/LuxDBDiagram/pull/3) | "Approve, run all", 2026-11-24 |
 | 04 Dupes and instance navigation | `phase-04-dupes-instance-navigation` | Merged into `Dev` (`e3226f4`) | 0.0.4 | [#4](https://github.com/LuxForge-ltd/LuxDBDiagram/pull/4) | "Approve, run all", 2026-11-24 |
 | 05 Float relationship cards | `phase-05-float-relationship-cards` | Merged into `Dev` (`23cd6e3`) | 0.0.5 | [#5](https://github.com/LuxForge-ltd/LuxDBDiagram/pull/5) | "Approve, run all", 2026-11-24 |
-| 06 Persistence, export and validation | `phase-06-persistence-export-validation` | Complete, checks passed on joyeuse | 0.0.6 | this pull request | "Approve, run all", 2026-11-24 |
+| 06 Persistence, export and validation | `phase-06-persistence-export-validation` | Merged into `Dev` (`fc69f97`) | 0.0.6 | [#6](https://github.com/LuxForge-ltd/LuxDBDiagram/pull/6) | "Approve, run all", 2026-11-24 |
+| 07 Default outgoing Floats | `phase-07-default-outgoing-floats` | Complete, checks passed on joyeuse | 0.0.7 | this pull request | "Yes, merge it", 2026-11-24 |
 
 ## Handoff Notes
 
@@ -33,5 +35,5 @@ Handoff record for agent work in this repository, as required by LuxForge [AI Ag
 - Version 0.1.0 is set only when the operator says so.
 - Pull requests must name the repository explicitly (`gh pr create --repo LuxForge-ltd/LuxDBDiagram`): as a fork, `gh` otherwise targets `chartdb/chartdb`.
 - GAP checks: `LUXDB_GAP_SCHEMA_DIR="L:/LuxForge/Grassroots Admin Portal/docs/architecture/schema" npx vitest run src/lib/areas`. On 2026-11-24 the GAP domain files had two broken references, reported to the operator: `finances.dbml` line 78 refers to `match_team_players` (the table is `match_team_player`), and `roles_groups.dbml` line 23 refers to `resource_groups`, which only `gap_combined.dbml` defines.
-- Phase 05 notes: the per-Area Float filter (All / Outgoing) was added within the approved Float phase after the GAP test showed `users` in an Area brings 55 single-row Floats (every table's `updated_by`). The default is All, as the brief describes; whether Outgoing should be the default is a question for the operator.
+- Phase 05 notes: the per-Area Float filter (All / Outgoing) was added within the approved Float phase after the GAP test showed `users` in an Area brings 55 single-row Floats (every table's `updated_by`). The default was All at first; the operator chose Outgoing as the default on 2026-11-24 (Phase 07).
 - Phase 02 notes: Areas are stored in Dexie version 14 (`area_views`). In the code the concept is `AreaView`; ChartDB's own `Area` (canvas rectangles) is labelled "Groups" in the English UI only.

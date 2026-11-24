@@ -25,7 +25,11 @@
 import type { DBField } from '@/lib/domain/db-field';
 import type { DBRelationship } from '@/lib/domain/db-relationship';
 import type { DBTable } from '@/lib/domain/db-table';
-import type { AreaViewTableInstance } from '@/lib/domain/area-view';
+import type {
+    AreaFloatFilter,
+    AreaViewTableInstance,
+} from '@/lib/domain/area-view';
+import { effectiveFloatFilter } from '@/lib/domain/area-view';
 
 /** Crow's foot symbol at one end of a relationship. */
 export type CrowFootEnd =
@@ -430,20 +434,20 @@ export interface IncomingSummaryRow {
 /**
  * Applies an Area's Float filter.
  *
- * With "all", every card is kept. With "outgoing", rows where the shown table is the one
- * referenced (incoming) are taken off the cards and summarised per shown column, so they are
- * still visible as a count and a line rather than as one card per referencing table. Cards
- * left with no rows are dropped.
+ * With "all", every card is kept. With "outgoing" (the default), rows where the shown table
+ * is the one referenced (incoming) are taken off the cards and summarised per shown column, so
+ * they are still visible as a count and a line rather than as one card per referencing table.
+ * Cards left with no rows are dropped.
  *
  * @param cards Cards from `resolveFloatCards`.
- * @param filter The Area's Float filter (missing means "all").
+ * @param filter The Area's stored Float filter (missing means the default, "outgoing").
  * @returns The cards to draw and the summary of hidden incoming references (empty for "all").
  */
 export const applyFloatFilter = (
     cards: readonly FloatCard[],
-    filter: 'all' | 'outgoing' | null | undefined
+    filter: AreaFloatFilter | null | undefined
 ): { cards: FloatCard[]; incoming: IncomingSummaryRow[] } => {
-    if (filter !== 'outgoing') {
+    if (effectiveFloatFilter(filter) === 'all') {
         return { cards: [...cards], incoming: [] };
     }
 

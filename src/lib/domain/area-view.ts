@@ -42,16 +42,30 @@ export interface AreaView {
     tables: AreaViewTableInstance[];
     floats?: AreaViewFloatLayout[] | null;
     /**
-     * Which Floats the Area shows. "all" (the default) shows every relationship that leaves
-     * the Area. "outgoing" shows Floats only for tables the Area's columns point at; the
-     * references coming in from outside are summarised on one card instead, so a widely
-     * referenced table (such as `users`) does not bring dozens of Floats with it.
+     * Which Floats the Area shows. "outgoing" (the default, used when this is not set) shows
+     * Floats only for tables the Area's columns point at; the references coming in from
+     * outside are summarised on one card instead, so a widely referenced table (such as
+     * `users`) does not bring dozens of Floats with it. "all" shows a Float for every
+     * relationship that leaves the Area.
      */
     floatFilter?: AreaFloatFilter | null;
     createdAt: number;
 }
 
 export type AreaFloatFilter = 'all' | 'outgoing';
+
+/** The Float filter of an Area that has none stored. */
+export const DEFAULT_AREA_FLOAT_FILTER: AreaFloatFilter = 'outgoing';
+
+/**
+ * The Float filter an Area actually uses.
+ *
+ * @param filter The Area's stored filter, if any.
+ * @returns The stored filter, or the default when none is stored.
+ */
+export const effectiveFloatFilter = (
+    filter: AreaFloatFilter | null | undefined
+): AreaFloatFilter => filter ?? DEFAULT_AREA_FLOAT_FILTER;
 
 export const areaViewTableInstanceSchema: z.ZodType<AreaViewTableInstance> =
     z.object({

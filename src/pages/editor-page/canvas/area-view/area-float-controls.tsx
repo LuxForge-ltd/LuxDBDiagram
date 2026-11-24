@@ -12,6 +12,7 @@ import { Link2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChartDB } from '@/hooks/use-chartdb';
 import type { AreaFloatFilter, AreaView } from '@/lib/domain/area-view';
+import { effectiveFloatFilter } from '@/lib/domain/area-view';
 import { cn } from '@/lib/utils';
 
 export interface AreaFloatControlsProps {
@@ -25,7 +26,7 @@ export const AreaFloatControls: React.FC<AreaFloatControlsProps> = ({
 }) => {
     const { t } = useTranslation();
     const { updateAreaViews, readonly } = useChartDB();
-    const filter: AreaFloatFilter = areaView.floatFilter ?? 'all';
+    const filter: AreaFloatFilter = effectiveFloatFilter(areaView.floatFilter);
 
     if (counts.total === 0) return null;
 
