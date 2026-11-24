@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { importDBMLToDiagram } from '@/lib/dbml/dbml-import/dbml-import';
 import { DatabaseType } from '@/lib/domain/database-type';
+import { effectiveFloatFilter } from '@/lib/domain/area-view';
 import type { Diagram } from '@/lib/domain/diagram';
 import {
     diagramFromJSONInput,
@@ -136,7 +137,7 @@ const areaSignature = (diagram: Diagram) => {
         .map((area) => ({
             name: area.name,
             color: area.color,
-            floatFilter: area.floatFilter ?? 'all',
+            floatFilter: effectiveFloatFilter(area.floatFilter),
             tables: area.tables.map((instance) => ({
                 table: tableName(instance.tableId),
                 x: instance.x,
@@ -170,7 +171,7 @@ const edit = (diagram: Diagram): Diagram => {
     users = setInstancePositions(users, [
         { tableId: tableId('users'), x: -120.5, y: 33 },
     ]);
-    users = { ...users, color: '#ff9f74', floatFilter: 'outgoing' };
+    users = { ...users, color: '#ff9f74', floatFilter: 'all' };
 
     let matches = removeTableInstances(matchesArea, [tableId('match_teams')]);
     matches = setFloatLayout(matches, {

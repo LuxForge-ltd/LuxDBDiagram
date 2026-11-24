@@ -383,9 +383,9 @@ describe('commentLossWarning', () => {
 });
 
 describe('Float filter setting', () => {
-    it('reads and writes [floats: outgoing] on an Area', () => {
+    it('reads and writes [floats: all], the setting that differs from the default', () => {
         const { areas, issues } = extractAreaBlocks(
-            'Area "Users" [color: #b067e9, floats: outgoing] {\n  users\n}'
+            'Area "Users" [color: #b067e9, floats: all] {\n  users\n}'
         );
         expect(issues).toEqual([]);
         const { areaViews } = resolveParsedAreas(areas, {
@@ -393,9 +393,27 @@ describe('Float filter setting', () => {
             relationships,
             generateId,
         });
-        expect(areaViews[0].floatFilter).toBe('outgoing');
+        expect(areaViews[0].floatFilter).toBe('all');
 
         const text = serializeAreaViews(areaViews, { tables });
-        expect(text).toContain('[color: #b067e9, floats: outgoing]');
+        expect(text).toContain('[color: #b067e9, floats: all]');
+    });
+
+    it('accepts [floats: outgoing] and writes nothing for the default', () => {
+        const { areas } = extractAreaBlocks(
+            'Area "A" [floats: outgoing] {\n  users\n}\nArea "B" {\n  users\n}'
+        );
+        const { areaViews } = resolveParsedAreas(areas, {
+            tables,
+            relationships,
+            generateId,
+        });
+        expect(areaViews.map((area) => area.floatFilter)).toEqual([
+            'outgoing',
+            undefined,
+        ]);
+
+        const text = serializeAreaViews(areaViews, { tables });
+        expect(text).not.toContain('floats:');
     });
 });

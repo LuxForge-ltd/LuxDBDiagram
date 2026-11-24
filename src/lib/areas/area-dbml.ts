@@ -26,6 +26,10 @@ import type {
     AreaFloatFilter,
 } from '@/lib/domain/area-view';
 import {
+    DEFAULT_AREA_FLOAT_FILTER,
+    effectiveFloatFilter,
+} from '@/lib/domain/area-view';
+import {
     blankRange,
     findTopLevelBlocks,
     maskCommentsAndStrings,
@@ -510,7 +514,10 @@ export const serializeAreaViews = (
             const lines: string[] = [];
             const name = area.name.replace(/(["\\])/g, '\\$1');
             const floats =
-                area.floatFilter === 'outgoing' ? ', floats: outgoing' : '';
+                effectiveFloatFilter(area.floatFilter) ===
+                DEFAULT_AREA_FLOAT_FILTER
+                    ? ''
+                    : `, floats: ${effectiveFloatFilter(area.floatFilter)}`;
             lines.push(`Area "${name}" [color: ${area.color}${floats}] {`);
 
             for (const instance of area.tables) {

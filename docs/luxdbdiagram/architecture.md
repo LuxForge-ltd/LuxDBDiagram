@@ -148,12 +148,14 @@ references remapped like the rest of the diagram.
     sit in columns to the right of the Area's tables, near the tables they connect to, wrapping into
     more columns rather than growing one very tall stack.
 - **Float filter.** A widely referenced table (for example `users`, referenced by an `updated_by`
-  column on almost every GAP table) brings a Float for every table that references it. The control
-  at the top right of the canvas switches an Area between **All** (the default) and **Outgoing**:
-  Floats only for tables the Area's columns point at, with the incoming references summarised on one
-  "Referenced from outside this Area" card (one row and one line per referenced column, with the
-  number of referencing tables). Nothing is hidden silently; "Show these as Floats" switches back.
-  Enhanced DBML stores the setting as `Area "Matches" [floats: outgoing] { ... }`.
+  column on almost every GAP table) would otherwise bring a Float for every table that references it.
+  Areas therefore default to **Outgoing**: Floats only for tables the Area's columns point at, with the
+  incoming references summarised on one "Referenced from outside this Area" card (one row and one line
+  per referenced column, with the number of referencing tables). Nothing is hidden silently. The control
+  at the top right of the canvas, or "Show these as Floats" on the summary card, switches an Area to
+  **All**: a Float for every relationship that leaves the Area. Enhanced DBML writes only the
+  non-default setting, `Area "Matches" [floats: all] { ... }`; `[floats: outgoing]` is accepted on
+  import and means the same as no setting.
 - Navigation (markers and Float rows) waits until the target Area is on screen
   before centring, because a table's node has the same id in every view.
 - Undo and redo cover Area changes (create, delete, rename, recolour, reorder, membership, moves).
