@@ -12,6 +12,8 @@ import type { DBCustomType } from './db-custom-type';
 import { dbCustomTypeSchema } from './db-custom-type';
 import type { Note } from './note';
 import { noteSchema } from './note';
+import type { AreaView } from './area-view';
+import { areaViewSchema } from './area-view';
 
 export interface Diagram {
     id: string;
@@ -24,6 +26,8 @@ export interface Diagram {
     areas?: Area[];
     customTypes?: DBCustomType[];
     notes?: Note[];
+    /** LuxDBDiagram Areas: presentation metadata, never schema. */
+    areaViews?: AreaView[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -39,6 +43,7 @@ export const diagramSchema: z.ZodType<Diagram> = z.object({
     areas: z.array(areaSchema).optional(),
     customTypes: z.array(dbCustomTypeSchema).optional(),
     notes: z.array(noteSchema).optional(),
+    areaViews: z.array(areaViewSchema).optional(),
     createdAt: z.date(),
     updatedAt: z.date(),
 });

@@ -2,9 +2,11 @@ import { Parser } from '@dbml/core';
 import { preprocessDBML, sanitizeDBML } from './dbml-import';
 import type { DBMLError } from './dbml-import-error';
 import {
+    DBMLValidationError,
     parseDBMLError,
     validateArrayTypesForDatabase,
 } from './dbml-import-error';
+import { extractAreaBlocks } from '@/lib/areas/area-dbml';
 import type { DatabaseType } from '@/lib/domain/database-type';
 
 export const verifyDBML = (
@@ -25,10 +27,25 @@ export const verifyDBML = (
           hasError: false;
       } => {
     try {
-        // Validate array types BEFORE preprocessing (preprocessing removes [])
-        validateArrayTypesForDatabase(content, databaseType);
+        // LuxDBDiagram: lift out Area blocks first (line numbers are kept), reporting any
+        // malformed block, so ordinary DBML validation sees only the schema.
+        const extraction = extractAreaBlocks(content);
+        const blocking = extraction.issues.find(
+            (issue) => issue.severity === 'error'
+        );
+        if (blocking) {
+            throw new DBMLValidationError(
+                blocking.message,
+                blocking.line ?? 1,
+                blocking.column ?? 1
+            );
+        }
+        const schemaContent = extraction.content;
 
-        const { content: preprocessedContent } = preprocessDBML(content);
+        // Validate array types BEFORE preprocessing (preprocessing removes [])
+        validateArrayTypesForDatabase(schemaContent, databaseType);
+
+        const { content: preprocessedContent } = preprocessDBML(schemaContent);
         const sanitizedContent = sanitizeDBML(preprocessedContent);
 
         const parser = new Parser();

@@ -28,6 +28,7 @@ import {
     useKeyPress,
     SelectionMode,
     useUpdateNodeInternals,
+    Panel,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import equal from 'fast-deep-equal';
@@ -122,6 +123,15 @@ import { filterTable } from '@/lib/domain/diagram-filter/filter';
 import { defaultSchemas } from '@/lib/data/default-schemas';
 import { useDiff } from '@/context/diff-context/use-diff';
 import { useClickAway } from 'react-use';
+import { useAreaCanvasProjection } from './area-view/use-area-canvas-projection';
+import { useAreaViewport } from './area-view/use-area-viewport';
+import { AreaTabs } from './area-view/area-tabs';
+import { AreaEmptyState } from './area-view/area-empty-state';
+
+// LuxDBDiagram: ChartDB Groups (rectangles) and notes belong to the "All tables" layout,
+// so an open Area shows neither. Stable empty arrays keep memoised hooks quiet.
+const NO_GROUPS: Area[] = [];
+const NO_NOTES: Note[] = [];
 
 const HIGHLIGHTED_EDGE_Z_INDEX = 1;
 const DEFAULT_EDGE_Z_INDEX = 0;
@@ -284,10 +294,8 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
     const { t } = useTranslation();
     const { isLostInCanvas } = useIsLostInCanvas();
     const {
-        tables,
-        areas,
-        notes,
-        relationships,
+        areas: groupAreas,
+        notes: canonicalNotes,
         createRelationship,
         createDependency,
         updateTablesState,
@@ -296,7 +304,6 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
         getField,
         databaseType,
         events,
-        dependencies,
         readonly,
         removeArea,
         updateArea,
@@ -305,6 +312,21 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
         highlightedCustomType,
         highlightCustomTypeId,
     } = useChartDB();
+    // LuxDBDiagram: in the "All tables" view these are ChartDB's own tables, relationships
+    // and dependencies; inside an Area they are the Area's projection of them.
+    const areaProjection = useAreaCanvasProjection();
+    const {
+        isAreaMode,
+        tables,
+        relationships,
+        dependencies,
+        crossRelationships,
+        applyTableChanges: applyAreaTableChanges,
+    } = areaProjection;
+    const currentAreaViewId = areaProjection.currentAreaView?.id ?? null;
+    const areas = isAreaMode ? NO_GROUPS : groupAreas;
+    const notes = isAreaMode ? NO_NOTES : canonicalNotes;
+    useAreaViewport();
     const { showSidePanel } = useLayout();
     const { effectiveTheme } = useTheme();
     const { scrollAction, showDBViews, showMiniMapOnCanvas } = useLocalConfig();
@@ -335,9 +357,11 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
 
     const shouldForceShowTable = useCallback(
         (tableId: string) => {
-            return checkIfNewTable({ tableId });
+            // An Area is itself the selection of tables to show, so the table filter and
+            // the "hide views" setting do not hide its tables.
+            return isAreaMode || checkIfNewTable({ tableId });
         },
-        [checkIfNewTable]
+        [checkIfNewTable, isAreaMode]
     );
 
     const [isInitialLoadingNodes, setIsInitialLoadingNodes] = useState(true);
@@ -593,6 +617,22 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                 (targetEdgeCountsByField[fieldId] || 0) + 1;
         });
 
+        // LuxDBDiagram: inside an Area, collapsed tables must keep the fields that have a
+        // line in this view visible (relationships within the Area and to Floats), rather
+        // than fields related to tables that are not shown.
+        const viewRelatedFieldIdsByTable = new Map<string, string[]>();
+        if (isAreaMode) {
+            const addField = (tableId: string, fieldId: string) => {
+                const list = viewRelatedFieldIdsByTable.get(tableId) ?? [];
+                if (!list.includes(fieldId)) list.push(fieldId);
+                viewRelatedFieldIdsByTable.set(tableId, list);
+            };
+            [...relationships, ...crossRelationships].forEach((rel) => {
+                addField(rel.sourceTableId, rel.sourceFieldId);
+                addField(rel.targetTableId, rel.targetFieldId);
+            });
+        }
+
         setNodes((prevNodes) => {
             const newNodes = [
                 ...tables.map((table) => {
@@ -634,6 +674,14 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                             isOverlapping,
                             highlightOverlappingTables,
                             hasHighlightedCustomType,
+                            ...(isAreaMode
+                                ? {
+                                      viewRelatedFieldIds:
+                                          viewRelatedFieldIdsByTable.get(
+                                              table.id
+                                          ) ?? [],
+                                  }
+                                : {}),
                         },
                     };
                 }),
@@ -675,6 +723,8 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
         showDBViews,
         shouldForceShowTable,
         relationships,
+        isAreaMode,
+        crossRelationships,
     ]);
 
     // Surgical update for relationship creation target highlighting
@@ -744,6 +794,11 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
     }, [filter, fitView, tables, setOverlapGraph, databaseType, showDBViews]);
 
     useEffect(() => {
+        // Group membership is worked out from table positions in the "All tables" layout.
+        // An open Area draws no Groups and uses its own positions, so running this there
+        // would wrongly clear every table's Group.
+        if (isAreaMode) return;
+
         const checkParentAreas = debounce(() => {
             const visibleTables = nodes
                 .filter((node) => node.type === 'table' && !node.hidden)
@@ -796,7 +851,40 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
         }, 300);
 
         checkParentAreas();
-    }, [nodes, updateTablesState]);
+    }, [nodes, updateTablesState, isAreaMode]);
+
+    // LuxDBDiagram: recalculate overlapping tables whenever the view changes, because each
+    // Area has its own table positions.
+    const overlapViewRef = useRef<string | null | undefined>(undefined);
+    useEffect(() => {
+        if (overlapViewRef.current === currentAreaViewId) return;
+        overlapViewRef.current = currentAreaViewId;
+        setOverlapGraph(
+            findOverlappingTables({
+                tables: isAreaMode
+                    ? tables
+                    : tables.filter(
+                          (table) =>
+                              filterTable({
+                                  table: { id: table.id, schema: table.schema },
+                                  filter,
+                                  options: {
+                                      defaultSchema:
+                                          defaultSchemas[databaseType],
+                                  },
+                              }) && (showDBViews ? true : !table.isView)
+                      ),
+            })
+        );
+    }, [
+        currentAreaViewId,
+        isAreaMode,
+        tables,
+        filter,
+        databaseType,
+        showDBViews,
+        setOverlapGraph,
+    ]);
 
     const onConnectHandler = useCallback(
         async (params: AddEdgeParams) => {
@@ -1130,8 +1218,15 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                 });
             }
 
-            // Apply all table updates in a single call
-            if (
+            // Apply all table updates in a single call. Inside an Area, moves and deletions
+            // change only the Area (the canonical tables are untouched).
+            if (isAreaMode) {
+                applyAreaTableChanges({
+                    positionChanges,
+                    removeChanges,
+                    sizeChanges,
+                });
+            } else if (
                 positionChanges.length > 0 ||
                 removeChanges.length > 0 ||
                 sizeChanges.length > 0 ||
@@ -1332,6 +1427,8 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
             tables,
             areas,
             getNode,
+            isAreaMode,
+            applyAreaTableChanges,
         ]
     );
 
@@ -1479,7 +1576,12 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
     // Check if all tables are hidden due to filtering
     // Derived from filter state directly (not nodes) for better performance
     const allTablesHiddenByFilter = useMemo(() => {
-        if (!hasActiveFilter || tables.length === 0 || filterLoading) {
+        if (
+            isAreaMode ||
+            !hasActiveFilter ||
+            tables.length === 0 ||
+            filterLoading
+        ) {
             return false;
         }
         // Check if any table passes the filter
@@ -1491,7 +1593,14 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
             })
         ).length;
         return visibleTableCount === 0;
-    }, [hasActiveFilter, tables, filter, databaseType, filterLoading]);
+    }, [
+        isAreaMode,
+        hasActiveFilter,
+        tables,
+        filter,
+        databaseType,
+        filterLoading,
+    ]);
 
     const pulseOverlappingTables = useCallback(() => {
         setHighlightOverlappingTables(true);
@@ -1802,6 +1911,16 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                             </div>
                         </div>
                     </Controls>
+                    <Panel
+                        position="top-center"
+                        className="!m-0"
+                        style={{ top: isDesktop ? 10 : 60 }}
+                    >
+                        <AreaTabs />
+                    </Panel>
+                    {isAreaMode && tables.length === 0 ? (
+                        <AreaEmptyState />
+                    ) : null}
                     {isLoadingDOM ? (
                         <Controls
                             position="top-center"

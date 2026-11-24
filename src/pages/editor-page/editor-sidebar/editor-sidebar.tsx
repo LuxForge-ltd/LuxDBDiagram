@@ -17,6 +17,7 @@ import {
     Plus,
     FolderOpen,
     CodeXml,
+    Layers,
 } from 'lucide-react';
 import { Table, Workflow } from 'lucide-react';
 import { useLayout } from '@/hooks/use-layout';
@@ -86,6 +87,16 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = () => {
                     selectSidebarSection('tables');
                 },
                 active: selectedSidebarSection === 'tables',
+            },
+            {
+                // LuxDBDiagram Areas
+                title: t('luxdb.sidebar.areas'),
+                icon: Layers,
+                onClick: () => {
+                    showSidePanel();
+                    selectSidebarSection('areaViews');
+                },
+                active: selectedSidebarSection === 'areaViews',
             },
             {
                 title: 'DBML',

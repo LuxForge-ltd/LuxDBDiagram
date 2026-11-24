@@ -67,6 +67,10 @@ export type TableNodeType = Node<
         isRelationshipCreatingTarget?: boolean;
         // Map of fieldId -> number of edges targeting that field (for handle creation)
         targetEdgeCounts?: Record<string, number>;
+        // LuxDBDiagram: inside an Area, the fields that have a line drawn in this view.
+        // A collapsed table keeps these visible so their lines have somewhere to attach.
+        // Undefined in the "All tables" view, where every relationship counts.
+        viewRelatedFieldIds?: string[];
     },
     'table'
 >;
@@ -84,6 +88,7 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
             highlightTable,
             isRelationshipCreatingTarget,
             targetEdgeCounts,
+            viewRelatedFieldIds,
         },
     }) => {
         const { updateTable, relationships, readonly } = useChartDB();
@@ -273,13 +278,16 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
         }, [table.id, updateTable]);
 
         const relatedFieldIds = useMemo(() => {
+            if (viewRelatedFieldIds) {
+                return new Set(viewRelatedFieldIds);
+            }
             const fieldIds = new Set<string>();
             relationships.forEach((rel) => {
                 if (rel.sourceFieldId) fieldIds.add(rel.sourceFieldId);
                 if (rel.targetFieldId) fieldIds.add(rel.targetFieldId);
             });
             return fieldIds;
-        }, [relationships]);
+        }, [relationships, viewRelatedFieldIds]);
 
         const visibleFields = useMemo(() => {
             // If in edit mode, use the initial field count to keep consistent height

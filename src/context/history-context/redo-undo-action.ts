@@ -8,6 +8,7 @@ import type { DBDependency } from '@/lib/domain/db-dependency';
 import type { Area } from '@/lib/domain/area';
 import type { DBCustomType } from '@/lib/domain/db-custom-type';
 import type { Note } from '@/lib/domain/note';
+import type { AreaView } from '@/lib/domain/area-view';
 
 type Action = keyof ChartDBContext;
 
@@ -207,6 +208,25 @@ type RedoUndoActionRemoveNotes = RedoUndoActionBase<
     { notes: Note[] }
 >;
 
+// LuxDBDiagram Area views
+type RedoUndoActionAddAreaViews = RedoUndoActionBase<
+    'addAreaViews',
+    { areaViews: AreaView[] },
+    { areaViewIds: string[] }
+>;
+
+type RedoUndoActionRemoveAreaViews = RedoUndoActionBase<
+    'removeAreaViews',
+    { areaViewIds: string[] },
+    { areaViews: AreaView[] }
+>;
+
+type RedoUndoActionUpdateAreaViews = RedoUndoActionBase<
+    'updateAreaViews',
+    { updates: { id: string; attributes: Partial<AreaView> }[] },
+    { updates: { id: string; attributes: Partial<AreaView> }[] }
+>;
+
 export type RedoUndoAction =
     | RedoUndoActionAddTables
     | RedoUndoActionRemoveTables
@@ -236,7 +256,10 @@ export type RedoUndoAction =
     | RedoUndoActionRemoveCustomTypes
     | RedoUndoActionAddNotes
     | RedoUndoActionUpdateNote
-    | RedoUndoActionRemoveNotes;
+    | RedoUndoActionRemoveNotes
+    | RedoUndoActionAddAreaViews
+    | RedoUndoActionRemoveAreaViews
+    | RedoUndoActionUpdateAreaViews;
 
 export type RedoActionData<T extends Action> = Extract<
     RedoUndoAction,

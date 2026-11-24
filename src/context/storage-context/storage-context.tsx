@@ -9,6 +9,7 @@ import type { Area } from '@/lib/domain/area';
 import type { DBCustomType } from '@/lib/domain/db-custom-type';
 import type { DiagramFilter } from '@/lib/domain/diagram-filter/diagram-filter';
 import type { Note } from '@/lib/domain/note';
+import type { AreaView } from '@/lib/domain/area-view';
 
 export interface StorageContext {
     // Config operations
@@ -32,6 +33,7 @@ export interface StorageContext {
         includeAreas?: boolean;
         includeCustomTypes?: boolean;
         includeNotes?: boolean;
+        includeAreaViews?: boolean;
     }) => Promise<Diagram[]>;
     getDiagram: (
         id: string,
@@ -42,6 +44,7 @@ export interface StorageContext {
             includeAreas?: boolean;
             includeCustomTypes?: boolean;
             includeNotes?: boolean;
+            includeAreaViews?: boolean;
         }
     ) => Promise<Diagram | undefined>;
     updateDiagram: (params: {
@@ -152,6 +155,22 @@ export interface StorageContext {
     deleteNote: (params: { diagramId: string; id: string }) => Promise<void>;
     listNotes: (diagramId: string) => Promise<Note[]>;
     deleteDiagramNotes: (diagramId: string) => Promise<void>;
+
+    // LuxDBDiagram Area view operations (presentation metadata)
+    addAreaView: (params: {
+        diagramId: string;
+        areaView: AreaView;
+    }) => Promise<void>;
+    updateAreaView: (params: {
+        id: string;
+        attributes: Partial<AreaView>;
+    }) => Promise<void>;
+    deleteAreaView: (params: {
+        diagramId: string;
+        id: string;
+    }) => Promise<void>;
+    listAreaViews: (diagramId: string) => Promise<AreaView[]>;
+    deleteDiagramAreaViews: (diagramId: string) => Promise<void>;
 }
 
 export const storageInitialValue: StorageContext = {
@@ -212,6 +231,13 @@ export const storageInitialValue: StorageContext = {
     deleteNote: emptyFn,
     listNotes: emptyFn,
     deleteDiagramNotes: emptyFn,
+
+    // LuxDBDiagram Area view operations
+    addAreaView: emptyFn,
+    updateAreaView: emptyFn,
+    deleteAreaView: emptyFn,
+    listAreaViews: emptyFn,
+    deleteDiagramAreaViews: emptyFn,
 };
 
 export const storageContext =

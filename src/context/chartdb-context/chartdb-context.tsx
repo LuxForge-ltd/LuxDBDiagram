@@ -14,6 +14,7 @@ import { EventEmitter } from 'ahooks/lib/useEventEmitter';
 import type { Area } from '@/lib/domain/area';
 import type { DBCustomType } from '@/lib/domain/db-custom-type';
 import type { Note } from '@/lib/domain/note';
+import type { AreaView } from '@/lib/domain/area-view';
 
 export type ChartDBEventType =
     | 'add_tables'
@@ -77,6 +78,8 @@ export interface ChartDBContext {
     areas: Area[];
     customTypes: DBCustomType[];
     notes: Note[];
+    /** LuxDBDiagram Areas (views over the schema). */
+    areaViews: AreaView[];
     currentDiagram: Diagram;
     events: EventEmitter<ChartDBEvent>;
     readonly?: boolean;
@@ -277,6 +280,31 @@ export interface ChartDBContext {
         options?: { updateHistory: boolean }
     ) => Promise<void>;
 
+    // LuxDBDiagram Area view operations. These change presentation metadata only and never
+    // modify tables, fields or relationships.
+    getAreaView: (id: string) => AreaView | null;
+    createAreaView: (
+        attributes?: Partial<Omit<AreaView, 'id'>>
+    ) => Promise<AreaView>;
+    addAreaViews: (
+        areaViews: AreaView[],
+        options?: { updateHistory: boolean }
+    ) => Promise<void>;
+    removeAreaViews: (
+        ids: string[],
+        options?: { updateHistory: boolean }
+    ) => Promise<void>;
+    updateAreaViews: (
+        updates: { id: string; attributes: Partial<AreaView> }[],
+        options?: { updateHistory: boolean }
+    ) => Promise<void>;
+    /** Applies a pure change to one Area, using its latest state. */
+    mutateAreaView: (
+        id: string,
+        mutate: (areaView: AreaView) => AreaView,
+        options?: { updateHistory: boolean }
+    ) => Promise<AreaView | null>;
+
     // Note operations
     createNote: (attributes?: Partial<Omit<Note, 'id'>>) => Promise<Note>;
     addNote: (
@@ -340,6 +368,7 @@ export const chartDBContext = createContext<ChartDBContext>({
     areas: [],
     customTypes: [],
     notes: [],
+    areaViews: [],
     schemas: [],
     highlightCustomTypeId: emptyFn,
     currentDiagram: {
@@ -421,6 +450,14 @@ export const chartDBContext = createContext<ChartDBContext>({
     removeArea: emptyFn,
     removeAreas: emptyFn,
     updateArea: emptyFn,
+
+    // LuxDBDiagram Area view operations
+    getAreaView: emptyFn,
+    createAreaView: emptyFn,
+    addAreaViews: emptyFn,
+    removeAreaViews: emptyFn,
+    updateAreaViews: emptyFn,
+    mutateAreaView: emptyFn,
 
     // Note operations
     createNote: emptyFn,

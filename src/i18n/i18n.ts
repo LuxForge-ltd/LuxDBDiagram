@@ -2,6 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import type { LanguageMetadata } from './types';
+import { luxdbStrings } from './luxdb-strings';
 import { en, enMetadata } from './locales/en';
 import { es, esMetadata } from './locales/es';
 import { fr, frMetadata } from './locales/fr';
@@ -85,5 +86,14 @@ i18n.use(LanguageDetector)
         fallbackLng: enMetadata.code,
         debug: false,
     });
+
+// LuxDBDiagram strings are merged into English; other languages fall back to them.
+i18n.addResourceBundle(
+    enMetadata.code,
+    'translation',
+    luxdbStrings,
+    true,
+    false
+);
 
 export { i18n };

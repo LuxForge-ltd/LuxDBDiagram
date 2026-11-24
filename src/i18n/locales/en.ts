@@ -218,29 +218,29 @@ export const en = {
             },
 
             areas_section: {
-                areas: 'Areas',
-                add_area: 'Add Area',
+                areas: 'Groups',
+                add_area: 'Add Group',
                 filter: 'Filter',
                 clear: 'Clear Filter',
-                no_results: 'No areas found matching your filter.',
+                no_results: 'No groups found matching your filter.',
 
                 area: {
                     area_actions: {
-                        title: 'Area Actions',
+                        title: 'Group Actions',
                         edit_name: 'Edit Name',
-                        delete_area: 'Delete Area',
+                        delete_area: 'Delete Group',
                     },
                 },
                 empty_state: {
-                    title: 'No areas',
-                    description: 'Create an area to get started',
+                    title: 'No groups',
+                    description: 'Create a group to get started',
                 },
             },
 
             visuals_section: {
                 visuals: 'Visuals',
                 tabs: {
-                    areas: 'Areas',
+                    areas: 'Groups',
                     notes: 'Notes',
                 },
             },
@@ -512,7 +512,7 @@ export const en = {
             new_table: 'New Table',
             new_view: 'New View',
             new_relationship: 'New Relationship',
-            new_area: 'New Area',
+            new_area: 'New Group',
             new_note: 'New Note',
         },
 
@@ -521,8 +521,8 @@ export const en = {
             duplicate_table: 'Duplicate Table',
             delete_table: 'Delete Table',
             add_relationship: 'Add Relationship',
-            move_to_area: 'Move to Area',
-            no_area: 'No Area',
+            move_to_area: 'Move to Group',
+            no_area: 'No Group',
         },
 
         canvas: {
@@ -534,7 +534,7 @@ export const en = {
             title: 'Filter Tables',
             search_placeholder: 'Search tables...',
             group_by_schema: 'Group by Schema',
-            group_by_area: 'Group by Area',
+            group_by_area: 'Organise by Group',
             no_tables_found: 'No tables found',
             empty_diagram_description: 'Create a table to get started',
             no_tables_description: 'Try adjusting your search or filter',

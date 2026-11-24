@@ -85,6 +85,25 @@ Several `.dbml` files can be imported together. They are merged into one schema 
 references across files resolve. A table defined identically in two files is kept once with a warning;
 two different definitions of the same table stop the import with both locations reported.
 
+## Working with Areas (editor)
+
+- **Area tabs** at the top of the canvas switch between **All tables** (ChartDB's own view, unchanged)
+  and each Area. A back arrow returns to the previously viewed Area, and **+** creates an Area. The
+  open Area is remembered per diagram in the browser, and each view keeps its own pan and zoom.
+- The **Areas** panel (sidebar) lists Areas with their table counts. Areas can be opened, renamed
+  (double-click), recoloured, reordered (drag handle) and deleted. Deleting an Area never deletes tables.
+- Inside an Area:
+  - moving a table moves only that Area's copy of it;
+  - **Delete** removes the table from the Area only; the table, its columns and relationships stay in
+    the schema and in other Areas (use the table's menu to delete the table itself);
+  - resizing a table changes its width in every view, because width belongs to the table;
+  - the table filter and the "hide views" setting do not apply, because the Area is itself the
+    selection of tables;
+  - collapsed tables keep the columns that have a line in this Area visible.
+- Undo and redo cover Area changes (create, delete, rename, recolour, reorder, membership, moves).
+- Import shows Area problems (missing or ambiguous tables, repeats, unknown settings) and lost `//`
+  comments as warnings before the import is confirmed.
+
 ## Rendering an Area
 
 For the selected Area, a pure resolver (`src/lib/areas/`) works out:

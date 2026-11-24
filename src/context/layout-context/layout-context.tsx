@@ -6,7 +6,9 @@ export type SidebarSection =
     | 'tables'
     | 'refs'
     | 'customTypes'
-    | 'visuals';
+    | 'visuals'
+    // LuxDBDiagram Areas panel
+    | 'areaViews';
 
 export type VisualsTab = 'areas' | 'notes';
 

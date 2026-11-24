@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type { DBTable } from '@/lib/domain/db-table';
 import { deepCopy, generateId } from '@/lib/utils';
 import { defaultTableColor, randomColor, viewColor } from '@/lib/colors';
@@ -34,6 +34,8 @@ import {
     type DBCustomType,
 } from '@/lib/domain/db-custom-type';
 import { getDefaultPrimaryKeyType } from '@/lib/data/data-types/data-types';
+import type { AreaView } from '@/lib/domain/area-view';
+import { buildAreaView } from '@/lib/areas/area-view-ops';
 
 export interface ChartDBProviderProps {
     diagram?: Diagram;
@@ -71,6 +73,12 @@ export const ChartDBProvider: React.FC<
         diagram?.customTypes ?? []
     );
     const [notes, setNotes] = useState<Note[]>(diagram?.notes ?? []);
+    const [areaViews, setAreaViews] = useState<AreaView[]>(
+        diagram?.areaViews ?? []
+    );
+    // Latest Areas, updated immediately on every change (see the Area view operations).
+    const areaViewsRef = useRef<AreaView[]>(areaViews);
+    areaViewsRef.current = areaViews;
 
     const { events: diffEvents } = useDiff();
 
@@ -154,6 +162,7 @@ export const ChartDBProvider: React.FC<
             areas,
             customTypes,
             notes,
+            areaViews,
         }),
         [
             diagramId,
@@ -166,6 +175,7 @@ export const ChartDBProvider: React.FC<
             areas,
             customTypes,
             notes,
+            areaViews,
             diagramCreatedAt,
             diagramUpdatedAt,
         ]
@@ -180,6 +190,8 @@ export const ChartDBProvider: React.FC<
             setAreas([]);
             setCustomTypes([]);
             setNotes([]);
+            areaViewsRef.current = [];
+            setAreaViews([]);
             setDiagramUpdatedAt(updatedAt);
 
             resetRedoStack();
@@ -193,6 +205,7 @@ export const ChartDBProvider: React.FC<
                 db.deleteDiagramAreas(diagramId),
                 db.deleteDiagramCustomTypes(diagramId),
                 db.deleteDiagramNotes(diagramId),
+                db.deleteDiagramAreaViews(diagramId),
             ]);
         }, [db, diagramId, resetRedoStack, resetUndoStack]);
 
@@ -208,6 +221,8 @@ export const ChartDBProvider: React.FC<
             setAreas([]);
             setCustomTypes([]);
             setNotes([]);
+            areaViewsRef.current = [];
+            setAreaViews([]);
             resetRedoStack();
             resetUndoStack();
 
@@ -219,6 +234,7 @@ export const ChartDBProvider: React.FC<
                 db.deleteDiagramAreas(diagramId),
                 db.deleteDiagramCustomTypes(diagramId),
                 db.deleteDiagramNotes(diagramId),
+                db.deleteDiagramAreaViews(diagramId),
             ]);
         }, [db, diagramId, resetRedoStack, resetUndoStack]);
 
@@ -1656,7 +1672,7 @@ export const ChartDBProvider: React.FC<
         async (attributes) => {
             const area: Area = {
                 id: generateId(),
-                name: `Area ${areas.length + 1}`,
+                name: `Group ${areas.length + 1}`,
                 x: 0,
                 y: 0,
                 width: 300,
@@ -1868,6 +1884,166 @@ export const ChartDBProvider: React.FC<
         [db, diagramId, setNotes, getNote, addUndoAction, resetRedoStack]
     );
 
+    // LuxDBDiagram Area view operations.
+    // Areas are presentation metadata: these functions never touch tables, fields or
+    // relationships. Changes read the latest Areas from a ref, so several changes made in
+    // quick succession (before React re-renders) build on each other instead of
+    // overwriting one another.
+    const commitAreaViews = useCallback((next: AreaView[]) => {
+        areaViewsRef.current = next;
+        setAreaViews(next);
+    }, []);
+
+    const touchDiagram = useCallback(async () => {
+        const updatedAt = new Date();
+        setDiagramUpdatedAt(updatedAt);
+        await db.updateDiagram({ id: diagramId, attributes: { updatedAt } });
+    }, [db, diagramId]);
+
+    const getAreaView: ChartDBContext['getAreaView'] = useCallback(
+        (id: string) => areaViews.find((view) => view.id === id) ?? null,
+        [areaViews]
+    );
+
+    const addAreaViews: ChartDBContext['addAreaViews'] = useCallback(
+        async (views, options = { updateHistory: true }) => {
+            commitAreaViews([...areaViewsRef.current, ...views]);
+
+            await Promise.all([
+                ...views.map((areaView) =>
+                    db.addAreaView({ diagramId, areaView })
+                ),
+                touchDiagram(),
+            ]);
+
+            if (options.updateHistory) {
+                addUndoAction({
+                    action: 'addAreaViews',
+                    redoData: { areaViews: views },
+                    undoData: { areaViewIds: views.map((view) => view.id) },
+                });
+                resetRedoStack();
+            }
+        },
+        [
+            db,
+            diagramId,
+            commitAreaViews,
+            touchDiagram,
+            addUndoAction,
+            resetRedoStack,
+        ]
+    );
+
+    const createAreaView: ChartDBContext['createAreaView'] = useCallback(
+        async (attributes = {}) => {
+            const areaView = buildAreaView(
+                areaViewsRef.current,
+                attributes,
+                generateId
+            );
+            await addAreaViews([areaView]);
+            return areaView;
+        },
+        [addAreaViews]
+    );
+
+    const removeAreaViews: ChartDBContext['removeAreaViews'] = useCallback(
+        async (ids, options = { updateHistory: true }) => {
+            const removed = areaViewsRef.current.filter((view) =>
+                ids.includes(view.id)
+            );
+            commitAreaViews(
+                areaViewsRef.current.filter((view) => !ids.includes(view.id))
+            );
+
+            await Promise.all([
+                ...ids.map((id) => db.deleteAreaView({ diagramId, id })),
+                touchDiagram(),
+            ]);
+
+            if (removed.length > 0 && options.updateHistory) {
+                addUndoAction({
+                    action: 'removeAreaViews',
+                    redoData: { areaViewIds: ids },
+                    undoData: { areaViews: removed },
+                });
+                resetRedoStack();
+            }
+        },
+        [
+            db,
+            diagramId,
+            commitAreaViews,
+            touchDiagram,
+            addUndoAction,
+            resetRedoStack,
+        ]
+    );
+
+    const updateAreaViews: ChartDBContext['updateAreaViews'] = useCallback(
+        async (updates, options = { updateHistory: true }) => {
+            const before = areaViewsRef.current;
+            const applied = updates.filter((update) =>
+                before.some((view) => view.id === update.id)
+            );
+            if (applied.length === 0) return;
+
+            const next = before.map((view) => {
+                const change = applied.find((update) => update.id === view.id);
+                return change ? { ...view, ...change.attributes } : view;
+            });
+            commitAreaViews(next);
+
+            await Promise.all([
+                ...applied.map(({ id, attributes }) =>
+                    db.updateAreaView({ id, attributes })
+                ),
+                touchDiagram(),
+            ]);
+
+            if (options.updateHistory) {
+                addUndoAction({
+                    action: 'updateAreaViews',
+                    redoData: { updates: applied },
+                    undoData: {
+                        updates: applied.map(({ id, attributes }) => {
+                            const previous = before.find(
+                                (view) => view.id === id
+                            ) as AreaView;
+                            const restored: Partial<AreaView> = {};
+                            (
+                                Object.keys(attributes) as (keyof AreaView)[]
+                            ).forEach((key) => {
+                                (restored as Record<string, unknown>)[key] =
+                                    previous[key];
+                            });
+                            return { id, attributes: restored };
+                        }),
+                    },
+                });
+                resetRedoStack();
+            }
+        },
+        [db, commitAreaViews, touchDiagram, addUndoAction, resetRedoStack]
+    );
+
+    const mutateAreaView: ChartDBContext['mutateAreaView'] = useCallback(
+        async (id, mutate, options = { updateHistory: true }) => {
+            const current = areaViewsRef.current.find((view) => view.id === id);
+            if (!current) return null;
+
+            const next = mutate(current);
+            if (next === current) return current;
+
+            const { id: _unchangedId, ...attributes } = next;
+            void _unchangedId;
+            await updateAreaViews([{ id, attributes }], options);
+            return next;
+        },
+        [updateAreaViews]
+    );
+
     const highlightCustomTypeId = useCallback(
         (id?: string) => setHighlightedCustomTypeId(id),
         [setHighlightedCustomTypeId]
@@ -1895,6 +2071,8 @@ export const ChartDBProvider: React.FC<
                 setDiagramUpdatedAt(diagram.updatedAt);
                 setHighlightedCustomTypeId(undefined);
                 setNotes(diagram.notes ?? []);
+                areaViewsRef.current = diagram.areaViews ?? [];
+                setAreaViews(diagram.areaViews ?? []);
 
                 events.emit({ action: 'load_diagram', data: { diagram } });
 
@@ -1940,6 +2118,7 @@ export const ChartDBProvider: React.FC<
                 includeAreas: true,
                 includeCustomTypes: true,
                 includeNotes: true,
+                includeAreaViews: true,
             });
 
             if (diagram) {
@@ -2106,6 +2285,7 @@ export const ChartDBProvider: React.FC<
                 dependencies,
                 areas,
                 notes,
+                areaViews,
                 currentDiagram,
                 schemas,
                 events,
@@ -2180,6 +2360,12 @@ export const ChartDBProvider: React.FC<
                 removeNote,
                 removeNotes,
                 updateNote,
+                getAreaView,
+                createAreaView,
+                addAreaViews,
+                removeAreaViews,
+                updateAreaViews,
+                mutateAreaView,
             }}
         >
             {children}
