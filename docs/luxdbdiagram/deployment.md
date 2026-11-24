@@ -8,7 +8,7 @@ visitor's own browser (IndexedDB). There is no backend, database or app secret t
 | Part | Value |
 | --- | --- |
 | Image | `ghcr.io/luxforge-ltd/luxdbdiagram:<version>`, built on joyeuse, private (see below) |
-| Platform | OpenRail on `openrail-trial` (VM 105, `10.10.180.5`) |
+| Platform | OpenRail on `openrail-trial` (VM 105, `10.10.180.5`), a Reserved deployment target in the Pillars Devices standard |
 | OpenRail project | `luxdbdiagram`, environment `production` |
 | App service | `web`: the image above, port 80, private name `web.internal`, pulled with the registry credential `GHCR` |
 | Connector service | `cloudflared`: image `cloudflare/cloudflared:2026.11.2`, start command `tunnel --no-autoupdate run`, `TUNNEL_TOKEN` sealed in by `luxhome-cf-publish` |
