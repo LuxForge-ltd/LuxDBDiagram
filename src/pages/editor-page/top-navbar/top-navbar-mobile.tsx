@@ -13,10 +13,10 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
     const renderStars = useCallback(() => {
         return (
             <iframe
-                src="https://ghbtns.com/github-btn.html?user=chartdb&repo=chartdb&type=star&size=small&text=false"
+                src="https://ghbtns.com/github-btn.html?user=LuxForge-ltd&repo=LuxDBDiagram&type=star&size=small&text=false"
                 width="25"
                 height="20"
-                title="GitHub"
+                title="LuxDBDiagram source on GitHub"
             ></iframe>
         );
     }, []);

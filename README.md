@@ -68,6 +68,10 @@ To try Areas, create a diagram, choose **DBML** import, and either paste DBML wi
 blocks). Then use the Area tabs above the canvas and the **Areas** panel in the sidebar. **Actions →
 Export as** offers **DBML** (schema only) and **LuxDBDiagram DBML (with Areas)**.
 
+The hosted copy runs on OpenRail behind Cloudflare Access; see
+[docs/luxdbdiagram/deployment.md](docs/luxdbdiagram/deployment.md). Its Docker image turns off ChartDB's
+analytics and ChartDB Cloud prompts by default.
+
 <p align="center">
   <img width='700px' src="./public/chartdb.png">
 </p>

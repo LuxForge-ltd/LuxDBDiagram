@@ -15,10 +15,10 @@ export const TopNavbar: React.FC<TopNavbarProps> = () => {
     const renderStars = useCallback(() => {
         return (
             <iframe
-                src={`https://ghbtns.com/github-btn.html?user=chartdb&repo=chartdb&type=star&size=large&text=false`}
+                src={`https://ghbtns.com/github-btn.html?user=LuxForge-ltd&repo=LuxDBDiagram&type=star&size=large&text=false`}
                 width="40"
                 height="30"
-                title="GitHub"
+                title="LuxDBDiagram source on GitHub"
             ></iframe>
         );
     }, []);

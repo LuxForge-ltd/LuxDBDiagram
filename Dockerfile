@@ -3,8 +3,9 @@ FROM node:24-alpine AS builder
 ARG VITE_OPENAI_API_KEY
 ARG VITE_OPENAI_API_ENDPOINT
 ARG VITE_LLM_MODEL_NAME
-ARG VITE_HIDE_CHARTDB_CLOUD
-ARG VITE_DISABLE_ANALYTICS
+# LuxDBDiagram: hide ChartDB Cloud prompts and ChartDB's analytics unless a build asks for them.
+ARG VITE_HIDE_CHARTDB_CLOUD=true
+ARG VITE_DISABLE_ANALYTICS=true
 
 WORKDIR /usr/src/app
 
@@ -23,6 +24,14 @@ RUN echo "VITE_OPENAI_API_KEY=${VITE_OPENAI_API_KEY}" > .env && \
 RUN npm run build
 
 FROM nginx:stable-alpine AS production
+
+LABEL org.opencontainers.image.source="https://github.com/LuxForge-ltd/LuxDBDiagram" \
+      org.opencontainers.image.description="LuxDBDiagram, a fork of ChartDB with Areas, Dupes and Floats" \
+      org.opencontainers.image.licenses="AGPL-3.0"
+
+# Runtime defaults written into /config.js, which the app reads before the build-time values.
+ENV HIDE_CHARTDB_CLOUD=true \
+    DISABLE_ANALYTICS=true
 
 COPY --from=builder /usr/src/app/dist /usr/share/nginx/html
 COPY ./default.conf.template /etc/nginx/conf.d/default.conf.template
