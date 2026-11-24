@@ -11,11 +11,13 @@
  *   files is kept once (the files' Areas all show it); two different definitions stop the
  *   import with both locations named.
  * - Each ticked file that defines tables gets an `Area "<file name>" [file: "<path>"]` block
- *   listing those tables. A file that writes its own Area blocks gets none.
+ *   listing those tables. A file that writes its own Area blocks gets none, and neither does
+ *   a file that another file's Area block names with `file:` (for example the Areas file
+ *   LuxDBDiag writes when it saves a diagram as files).
  * - A file that repeats tables from at least two smaller files "looks combined" (for example
  *   a whole-schema export kept beside per-domain files) and starts unticked.
  */
-import type { DBMLImportIssue } from './area-dbml';
+import { extractAreaBlocks, type DBMLImportIssue } from './area-dbml';
 import { findTopLevelBlocks } from './dbml-scanner';
 import { mergeDBMLFiles } from './multi-file-dbml';
 
@@ -171,6 +173,15 @@ export const composeFolderDBML = (
         stemCounts.set(stem, (stemCounts.get(stem) ?? 0) + 1);
     });
 
+    // Files already given an Area by a written Area block's `file:` setting.
+    const claimed = new Set<string>();
+    selected.forEach((file, index) => {
+        if (!summaries[index].definesAreas) return;
+        extractAreaBlocks(file.content).areas.forEach((area) => {
+            if (area.fileName) claimed.add(area.fileName.toLowerCase());
+        });
+    });
+
     const areas: ComposedFolderArea[] = [];
     const blocks: string[] = [];
     const seenTableKeys = new Map<string, number>();
@@ -181,7 +192,13 @@ export const composeFolderDBML = (
             const key = tableKey(table);
             seenTableKeys.set(key, (seenTableKeys.get(key) ?? 0) + 1);
         });
-        if (summary.definesAreas || summary.tables.length === 0) return;
+        if (
+            summary.definesAreas ||
+            summary.tables.length === 0 ||
+            claimed.has(file.path.toLowerCase())
+        ) {
+            return;
+        }
 
         const stem = fileStem(file.path);
         // Two files with the same name in different folders keep their folder in the name.

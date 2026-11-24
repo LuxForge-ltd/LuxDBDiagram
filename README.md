@@ -40,6 +40,20 @@ only. How it is built and deployed is described in
 
 Diagrams are saved in the browser you use. Export them as JSON or DBML to keep or move them.
 
+**A diagram as files.** **Actions → Export as → LuxDBDiag files (one per Area)…** saves the diagram
+as a folder of DBML files:
+- one file per Area, holding every table that Area shows, so a table shown by two Areas is written
+  in both files;
+- `unassigned.dbml` for tables in no Area;
+- `luxdbdiag.areas.dbml` for the Areas' colours and layout.
+
+Edge and Chrome write straight into a folder you pick, such as your clone of a schema repository.
+Other browsers download the files instead. Opening the folder again with **Open folder…** brings the
+diagram back.
+
+The DBML panel's **Show** picker displays any one of these files. The files are written by the DBML
+exporter, so `//` comments are not kept.
+
 **Settings → Accent colour** changes the accent from the default purple to one of ten colours,
 including ChartDB's original pink. The choice is saved in your browser.
 

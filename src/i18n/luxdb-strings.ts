@@ -132,6 +132,29 @@ export const luxdbStrings = {
             drop_to_remove_other:
                 'Drop here to remove {{count}} tables from {{area}} (they stay in the schema)',
         },
+        files: {
+            save_files: 'LuxDBDiag files (one per Area)…',
+            save_title: 'Save the diagram as files',
+            save_description:
+                '{{count}} files will be written: one per Area, holding the tables that Area shows ({{files}}). Files with the same names in the folder are replaced; other files are left alone. The files are written by the DBML exporter, so // comments are not kept and inline ref: settings become Ref lines.',
+            choose_folder: 'Choose folder…',
+            download_files: 'Download files',
+            saved_title_one: '{{count}} file saved to {{folder}}',
+            saved_title_other: '{{count}} files saved to {{folder}}',
+            downloaded_title: 'Files downloaded',
+            downloaded_description:
+                'This browser cannot write to a folder, so each file was downloaded. Edge and Chrome can save straight into a folder.',
+            save_failed: 'The files could not be saved',
+            nothing_to_save: 'The diagram has no tables to save',
+            view_label: 'Show',
+            whole_schema: 'Whole schema (editable)',
+            file_tables_one: '{{count}} table',
+            file_tables_other: '{{count}} tables',
+            file_view_hint:
+                'Built from the Area: every table it shows, and the relationships that touch them. Edit the schema in the whole-schema view or on the canvas.',
+            areas_file: 'Areas and layout',
+            unassigned_file: 'Tables in no Area',
+        },
         settings: {
             settings: 'Settings',
             accent_colour: 'Accent colour',

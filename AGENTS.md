@@ -38,8 +38,11 @@ enhanced DBML format are described in `docs/luxdbdiagram/architecture.md`.
 - **Extend, don't rewrite.** Reuse ChartDB's editor, DBML pipeline, canvas and storage. Keep LuxDBDiagram
   logic in its own modules (`src/lib/areas/`, `src/context/area-view-context/`, the Areas canvas and
   side-panel folders) and keep edits to large ChartDB files thin, so upstream changes can still be merged.
-- **One schema, many views.** Areas, Dupes and Floats are presentation metadata. They never copy, create
-  or change tables, columns or relationships.
+- **One schema, many views and files.** Areas, Dupes and Floats are presentation metadata over one
+  canonical schema; they never create or change tables, columns or relationships, and the diagram holds
+  one definition of each table. When a diagram is saved as files, each Area's file holds a copy of the
+  definitions of the tables that Area shows (a table in two Areas is written in both files), and opening
+  the files merges identical copies back into the one table.
 - **Licence.** Keep the AGPL-3.0 `LICENSE` and ChartDB attribution.
 - **Checks before every pull request** (run on an allowed device, joyeuse first):
   - `npm run lint`

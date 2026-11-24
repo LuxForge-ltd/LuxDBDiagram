@@ -17,6 +17,7 @@ import { useDialog } from '@/hooks/use-dialog';
 import { useExportImage } from '@/hooks/use-export-image';
 import { useDBMLFileExport } from '@/hooks/use-dbml-file-export';
 import { SettingsMenu } from './settings-menu';
+import { useSaveAreaFiles } from '@/hooks/use-save-area-files';
 import { databaseTypeToLabelMap } from '@/lib/databases';
 import { DatabaseType } from '@/lib/domain/database-type';
 import {
@@ -68,6 +69,7 @@ export const Menu: React.FC<MenuProps> = () => {
     const { redo, undo, hasRedo, hasUndo } = useHistory();
     const { exportImage } = useExportImage();
     const exportDBMLFile = useDBMLFileExport();
+    const saveAreaFiles = useSaveAreaFiles();
     const navigate = useNavigate();
 
     const handleDeleteDiagramAction = useCallback(() => {
@@ -315,6 +317,9 @@ export const Menu: React.FC<MenuProps> = () => {
                             </MenubarItem>
                             <MenubarItem onClick={() => exportDBMLFile(true)}>
                                 {t('luxdb.export.enhanced_dbml')}
+                            </MenubarItem>
+                            <MenubarItem onClick={saveAreaFiles}>
+                                {t('luxdb.files.save_files')}
                             </MenubarItem>
                         </MenubarSubContent>
                     </MenubarSub>
