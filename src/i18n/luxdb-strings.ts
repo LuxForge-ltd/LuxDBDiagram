@@ -109,5 +109,22 @@ export const luxdbStrings = {
             drop_to_remove_other:
                 'Drop here to remove {{count}} tables from {{area}} (they stay in the schema)',
         },
+        settings: {
+            settings: 'Settings',
+            accent_colour: 'Accent colour',
+            accent_hint: 'Saved in this browser',
+            accents: {
+                purple: 'Purple',
+                violet: 'Violet',
+                indigo: 'Indigo',
+                blue: 'Blue',
+                teal: 'Teal',
+                green: 'Green',
+                amber: 'Amber',
+                orange: 'Orange',
+                red: 'Red',
+                pink: 'Pink (ChartDB)',
+            },
+        },
     },
 };

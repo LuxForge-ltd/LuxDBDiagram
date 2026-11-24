@@ -180,6 +180,18 @@ foreign key is `not null` and "zero or one" otherwise. The referencing end is "z
 relationships and "zero or many" otherwise. "One or many" is drawn only when declared, which DBML cannot
 express, so it is never guessed.
 
+## Names and accent colour
+
+The product's names live in `src/lib/brand.ts`: LuxDBDiag (short), LuxForge DB diagrams (the header's
+brand mark) and LuxForge Database Diagrams built on ChartDB (page titles).
+
+ChartDB styles its accent with Tailwind's `pink-*` classes, in about 75 places across its components.
+`tailwind.config.js` maps that scale to the CSS variables `--lux-accent-50` to `--lux-accent-950`, so
+those classes follow the chosen accent without editing ChartDB's components. `globals.css` holds the
+default (purple). **Settings → Accent colour** applies another palette from `src/lib/accent/` at run
+time and remembers it in the browser's local storage (`luxdb-accent-color`). It is a per-browser
+preference, not part of any diagram.
+
 ## Known limitations inherited from ChartDB
 
 - `//` line comments in DBML have no place in ChartDB's model and are not kept on import. Table and

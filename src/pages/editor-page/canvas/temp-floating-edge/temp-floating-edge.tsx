@@ -37,7 +37,7 @@ export const TempFloatingEdge: React.FC<EdgeProps<TempFloatingEdgeType>> =
                     <path
                         id={id}
                         fill="none"
-                        stroke="#ec4899"
+                        className="stroke-pink-500"
                         strokeWidth={2}
                         strokeDasharray="5,5"
                         d={edgePath}
@@ -50,7 +50,7 @@ export const TempFloatingEdge: React.FC<EdgeProps<TempFloatingEdgeType>> =
                         cy={targetY}
                         fill="#fff"
                         r={3}
-                        stroke="#ec4899"
+                        className="stroke-pink-500"
                         strokeWidth={1.5}
                         style={{
                             pointerEvents: 'none',

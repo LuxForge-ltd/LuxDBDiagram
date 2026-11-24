@@ -20,7 +20,7 @@ export const ConnectionLine: React.FC<
         <g>
             <path
                 fill="none"
-                stroke="#ec4899"
+                className="stroke-pink-500"
                 strokeWidth={2}
                 strokeDasharray="5,5"
                 d={edgePath}
@@ -30,7 +30,7 @@ export const ConnectionLine: React.FC<
                 cy={toY}
                 fill="#fff"
                 r={3}
-                stroke="#ec4899"
+                className="stroke-pink-500"
                 strokeWidth={1.5}
             />
         </g>
