@@ -113,7 +113,15 @@ export const AreaViewProvider: React.FC<React.PropsWithChildren> = ({
     const requestFocus: AreaViewContext['requestFocus'] = useCallback(
         (target) => {
             counter.current += 1;
-            setFocusRequest({ ...target, requestId: counter.current });
+            setFocusRequest({
+                ...target,
+                // Unless told otherwise, focus in the view that is open now.
+                areaViewId:
+                    target.areaViewId === undefined
+                        ? currentRef.current
+                        : target.areaViewId,
+                requestId: counter.current,
+            });
         },
         []
     );
@@ -128,7 +136,7 @@ export const AreaViewProvider: React.FC<React.PropsWithChildren> = ({
                 setCurrent(areaViewId);
             }
             if (options?.focus) {
-                requestFocus(options.focus);
+                requestFocus({ ...options.focus, areaViewId });
             }
         },
         [requestFocus, setCurrent, setHistory]

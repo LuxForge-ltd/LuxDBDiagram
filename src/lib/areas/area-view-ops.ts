@@ -286,6 +286,47 @@ export const getAreaViewsContainingTable = (
         area.tables.some((instance) => instance.tableId === tableId)
     );
 
+/** One numbered Dupe marker on a table: an Area that shows the table. */
+export interface InstanceMarker {
+    areaViewId: string;
+    /** 1-based, following Area order, so the numbering is the same in every view. */
+    number: number;
+    name: string;
+    color: string;
+    /** Whether this marker is the Area currently open. */
+    current: boolean;
+}
+
+/**
+ * Works out the numbered markers for a table that appears in Areas.
+ *
+ * Markers are shown inside an Area when the table appears in at least two Areas (it is a
+ * Dupe), and in the "All tables" view when it appears in at least one, so the user can jump
+ * into an Area from there.
+ *
+ * @param areaViews All Areas.
+ * @param tableId Canonical table id.
+ * @param currentAreaViewId The open Area, or null for "All tables".
+ * @returns The markers in number order, or an empty list when none should show.
+ */
+export const getInstanceMarkers = (
+    areaViews: readonly AreaView[],
+    tableId: string,
+    currentAreaViewId: string | null
+): InstanceMarker[] => {
+    const containing = getAreaViewsContainingTable(areaViews, tableId);
+    const minimum = currentAreaViewId ? 2 : 1;
+    if (containing.length < minimum) return [];
+
+    return containing.map((area, index) => ({
+        areaViewId: area.id,
+        number: index + 1,
+        name: area.name,
+        color: area.color,
+        current: area.id === currentAreaViewId,
+    }));
+};
+
 /**
  * Computes new `order` values after the user reorders Areas.
  *

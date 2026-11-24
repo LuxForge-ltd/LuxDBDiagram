@@ -12,17 +12,51 @@ import { useEffect, useRef } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useAreaView } from '@/hooks/use-area-view';
 import { ALL_TABLES_KEY } from '@/context/area-view-context/area-view-context';
+import { useChartDB } from '@/hooks/use-chartdb';
+import { LEFT_HANDLE_ID_PREFIX } from '../table-node/table-node-field';
 
-/** Height of a table node's header plus one row, used to aim at a column. */
-const TABLE_HEADER_HEIGHT = 42;
-const FIELD_ROW_HEIGHT = 32;
+/** Height of a table node's header, used when no column is targeted. */
+const TABLE_HEADER_HEIGHT = 44;
 const HIGHLIGHT_DURATION_MS = 2400;
 const FOCUS_RETRY_MS = 50;
 const FOCUS_MAX_ATTEMPTS = 40;
 
+/**
+ * Finds the vertical centre of a column on the canvas, from its rendered connection handle.
+ * Collapsed tables do not show every column in order, so the DOM is the reliable source.
+ *
+ * @returns The column's centre in flow coordinates, or null when it is not rendered.
+ */
+const fieldCentreY = (
+    tableId: string,
+    fieldId: string | undefined,
+    screenToFlowPosition: (point: { x: number; y: number }) => {
+        x: number;
+        y: number;
+    }
+): number | null => {
+    if (!fieldId) return null;
+    const handle = document.querySelector(
+        `.react-flow__node[data-id="${CSS.escape(tableId)}"] [data-handleid="${CSS.escape(`${LEFT_HANDLE_ID_PREFIX}${fieldId}`)}"]`
+    );
+    if (!handle) return null;
+    const rect = handle.getBoundingClientRect();
+    return screenToFlowPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+    }).y;
+};
+
 export const useAreaViewport = () => {
-    const { getViewport, setViewport, fitView, getInternalNode, setCenter } =
-        useReactFlow();
+    const {
+        getViewport,
+        setViewport,
+        fitView,
+        getInternalNode,
+        setCenter,
+        screenToFlowPosition,
+    } = useReactFlow();
+    const { tables, areaViews } = useChartDB();
     const {
         currentAreaViewId,
         saveViewport,
@@ -63,36 +97,59 @@ export const useAreaViewport = () => {
         fitView,
     ]);
 
-    // Focus requests: wait until the table's node is rendered and measured, then centre it.
+    // Focus requests. A table's node has the same id in every view, so wait until the
+    // requested view is open and the node sits where that view stores it; then centre it
+    // (on the requested column when there is one) and highlight it.
     useEffect(() => {
         if (!focusRequest) return;
         let attempts = 0;
         let timer: ReturnType<typeof setTimeout>;
 
+        const expectedPosition = (): { x: number; y: number } | null => {
+            if (focusRequest.areaViewId === null) {
+                return (
+                    tables.find((table) => table.id === focusRequest.tableId) ??
+                    null
+                );
+            }
+            return (
+                areaViews
+                    .find((view) => view.id === focusRequest.areaViewId)
+                    ?.tables.find(
+                        (instance) => instance.tableId === focusRequest.tableId
+                    ) ?? null
+            );
+        };
+
         const tryFocus = () => {
+            const expected = expectedPosition();
+            if (!expected) {
+                // The table is not in that view (for example it was just removed).
+                clearFocusRequest();
+                return;
+            }
+
             const node = getInternalNode(focusRequest.tableId);
             const width = node?.measured?.width;
             const height = node?.measured?.height;
+            const position = node?.internals.positionAbsolute;
+            const ready =
+                currentAreaViewId === focusRequest.areaViewId &&
+                !!node &&
+                !!width &&
+                !!height &&
+                !!position &&
+                Math.abs(position.x - expected.x) < 1 &&
+                Math.abs(position.y - expected.y) < 1;
 
-            if (node && width && height) {
-                const table = (
-                    node.data as {
-                        table?: { fields: { id: string }[] };
-                    }
-                ).table;
-                const fieldIndex = focusRequest.fieldId
-                    ? (table?.fields.findIndex(
-                          (field) => field.id === focusRequest.fieldId
-                      ) ?? -1)
-                    : -1;
-                const position = node.internals.positionAbsolute;
+            if (ready) {
                 const y =
-                    fieldIndex >= 0
-                        ? position.y +
-                          TABLE_HEADER_HEIGHT +
-                          fieldIndex * FIELD_ROW_HEIGHT +
-                          FIELD_ROW_HEIGHT / 2
-                        : position.y + height / 2;
+                    fieldCentreY(
+                        focusRequest.tableId,
+                        focusRequest.fieldId,
+                        screenToFlowPosition
+                    ) ??
+                    position.y + Math.min(height / 2, TABLE_HEADER_HEIGHT * 3);
 
                 setCenter(position.x + width / 2, y, {
                     zoom: Math.max(getViewport().zoom, 0.9),
@@ -117,9 +174,13 @@ export const useAreaViewport = () => {
         return () => clearTimeout(timer);
     }, [
         focusRequest,
+        currentAreaViewId,
+        areaViews,
+        tables,
         getInternalNode,
         setCenter,
         getViewport,
+        screenToFlowPosition,
         setHighlight,
         clearFocusRequest,
     ]);

@@ -53,6 +53,8 @@ import { useDiff } from '@/context/diff-context/use-diff';
 import { TableNodeStatus } from './table-node-status/table-node-status';
 import { TableEditMode } from './table-edit-mode/table-edit-mode';
 import { useCanvas } from '@/hooks/use-canvas';
+import { useAreaView } from '@/hooks/use-area-view';
+import { AreaInstanceMarkers } from '../area-view/area-instance-markers';
 
 export const TABLE_RELATIONSHIP_SOURCE_HANDLE_ID_PREFIX = 'table_rel_source_';
 export const TABLE_RELATIONSHIP_TARGET_HANDLE_ID_PREFIX = 'table_rel_target_';
@@ -229,6 +231,11 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
             return relEdges;
         }, [edges, id]);
 
+        // LuxDBDiagram: navigation (Dupe markers, Float rows) briefly highlights a table and
+        // optionally one of its columns.
+        const { highlight: areaHighlight } = useAreaView();
+        const areaHighlighted = areaHighlight?.tableId === table.id;
+
         const highlightedFieldIds = useMemo(() => {
             const fieldIds = new Set<string>();
             selectedRelEdges.forEach((edge) => {
@@ -241,8 +248,12 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                 }
             });
 
+            if (areaHighlighted && areaHighlight?.fieldId) {
+                fieldIds.add(areaHighlight.fieldId);
+            }
+
             return fieldIds;
-        }, [selectedRelEdges]);
+        }, [selectedRelEdges, areaHighlighted, areaHighlight?.fieldId]);
 
         const focused = useMemo(
             () => (!!selected && !dragging) || isHovering,
@@ -375,6 +386,10 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                     highlightTable
                         ? 'ring-2 ring-offset-slate-50 dark:ring-offset-slate-900 ring-blue-500 ring-offset-2 animate-scale-2'
                         : '',
+                    // LuxDBDiagram: brief highlight after navigating to this table.
+                    areaHighlighted
+                        ? 'ring-4 ring-offset-slate-50 dark:ring-offset-slate-900 ring-pink-500 ring-offset-2 animate-scale-2'
+                        : '',
                     isDiffTableChanged &&
                         !isSummaryOnly &&
                         !isDiffNewTable &&
@@ -404,6 +419,7 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                 editTableMode,
                 isPartOfCreatingRelationship,
                 table.isView,
+                areaHighlighted,
             ]
         );
 
@@ -586,6 +602,8 @@ export const TableNode: React.FC<NodeProps<TableNodeType>> = React.memo(
                                     {table.name}
                                 </Label>
                             )}
+                            {/* LuxDBDiagram: numbered markers for the Areas showing this table. */}
+                            <AreaInstanceMarkers tableId={table.id} />
                         </div>
                         <div className="hidden shrink-0 flex-row group-hover:flex">
                             {readonly ? null : (
