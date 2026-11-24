@@ -38,6 +38,13 @@
 
 ---
 
+> **LuxDBDiagram** is LuxForge Ltd's fork of [ChartDB](https://github.com/chartdb/chartdb).
+> It keeps ChartDB's editor, DBML and SQL import/export, canvas and relationships, and adds
+> **Areas** (separate views over one schema), **Dupes** (the same table shown in several Areas)
+> and **Floats** (compact cards for relationships that cross an Area boundary).
+> See [docs/luxdbdiagram/architecture.md](docs/luxdbdiagram/architecture.md).
+> ChartDB's licence (AGPL-3.0) and attribution are retained; the rest of this README is ChartDB's own.
+
 <p align="center">
   <img width='700px' src="./public/chartdb.png">
 </p>
@@ -169,3 +176,5 @@ Thank you for helping us make ChartDB better for everyone :heart:.
 ## License
 
 ChartDB is licensed under the [GNU Affero General Public License v3.0](LICENSE)
+
+LuxDBDiagram is a modified version of ChartDB, distributed under the same licence. Copyright in ChartDB remains with its authors; LuxForge Ltd's modifications are also released under AGPL-3.0.
