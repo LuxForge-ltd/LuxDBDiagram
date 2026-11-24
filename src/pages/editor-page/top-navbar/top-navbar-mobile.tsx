@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import ChartDBLogo from '@/assets/logo-2.png';
+import { BrandMark } from '@/components/brand-mark/brand-mark';
 import { DiagramName } from './diagram-name';
 import { LanguageNav } from './language-nav/language-nav';
 import { Menu } from './menu/menu';
@@ -35,16 +35,8 @@ export const TopNavbarMobile: React.FC<TopNavbarMobileProps> = () => {
                         >
                             <MenuIcon className="size-5" />
                         </Button>
-                        <a
-                            href="https://chartdb.io"
-                            className="cursor-pointer"
-                            rel="noreferrer"
-                        >
-                            <img
-                                src={ChartDBLogo}
-                                alt="chartDB"
-                                className="h-4 max-w-fit"
-                            />
+                        <a href="/" className="cursor-pointer" rel="noreferrer">
+                            <BrandMark size="short" />
                         </a>
                     </div>
 

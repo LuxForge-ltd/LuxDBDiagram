@@ -23,6 +23,7 @@ import { AlertProvider } from '@/context/alert-context/alert-provider';
 import { CanvasProvider } from '@/context/canvas-context/canvas-provider';
 import { AreaViewProvider } from '@/context/area-view-context/area-view-provider';
 import { HIDE_CHARTDB_CLOUD } from '@/lib/env';
+import { brandTitle } from '@/lib/brand';
 import { useDiagramLoader } from './use-diagram-loader';
 import { DiffProvider } from '@/context/diff-context/diff-provider';
 import { TopNavbarMock } from './top-navbar/top-navbar-mock';
@@ -75,11 +76,7 @@ const EditorPageComponent: React.FC = () => {
     return (
         <>
             <Helmet>
-                <title>
-                    {diagramName
-                        ? `ChartDB - ${diagramName} Diagram | Visualize Database Schemas`
-                        : 'ChartDB - Create & Visualize Database Schema Diagrams'}
-                </title>
+                <title>{brandTitle(diagramName || null)}</title>
             </Helmet>
             <section
                 className={`bg-background ${isDesktop ? 'h-screen w-screen' : 'h-dvh w-dvw'} flex select-none flex-col overflow-x-hidden`}

@@ -29,7 +29,9 @@ Canonical policy: https://github.com/LuxForge-ltd/pillars/blob/main/standards/ai
 
 ## LuxDBDiagram project guidance
 
-LuxDBDiagram is a fork of ChartDB (`upstream`: https://github.com/chartdb/chartdb). It is a frontend-only
+LuxDBDiagram is a fork of ChartDB (`upstream`: https://github.com/chartdb/chartdb), kept for producing
+LuxForge's own database schemas. In the app it is named LuxDBDiag (short), LuxForge DB diagrams (medium)
+and LuxForge Database Diagrams built on ChartDB (full title); the names live in `src/lib/brand.ts`. It is a frontend-only
 React, TypeScript and Vite application; it needs no backend or database connection. Design and the
 enhanced DBML format are described in `docs/luxdbdiagram/architecture.md`.
 

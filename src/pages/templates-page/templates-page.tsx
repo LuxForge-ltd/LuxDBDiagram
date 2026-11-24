@@ -1,7 +1,5 @@
 import React from 'react';
-import ChartDBLogo from '@/assets/logo-light.png';
-import ChartDBDarkLogo from '@/assets/logo-dark.png';
-import { useTheme } from '@/hooks/use-theme';
+import { BrandMark } from '@/components/brand-mark/brand-mark';
 import { LocalConfigProvider } from '@/context/local-config-context/local-config-provider';
 import { ThemeProvider } from '@/context/theme-context/theme-provider';
 import { Component, Star } from 'lucide-react';
@@ -18,7 +16,6 @@ export interface TemplatesPageLoaderData {
 }
 
 const TemplatesPageComponent: React.FC = () => {
-    const { effectiveTheme } = useTheme();
     const data = useLoaderData() as TemplatesPageLoaderData;
 
     const { templates, allTags } = data ?? {};
@@ -42,19 +39,11 @@ const TemplatesPageComponent: React.FC = () => {
                     <div className="flex flex-1 justify-start gap-x-3">
                         <div className="flex items-center font-primary">
                             <a
-                                href="https://chartdb.io"
+                                href="/"
                                 className="cursor-pointer"
                                 rel="noreferrer"
                             >
-                                <img
-                                    src={
-                                        effectiveTheme === 'light'
-                                            ? ChartDBLogo
-                                            : ChartDBDarkLogo
-                                    }
-                                    alt="chartDB"
-                                    className="h-4 max-w-fit"
-                                />
+                                <BrandMark />
                             </a>
                         </div>
                     </div>

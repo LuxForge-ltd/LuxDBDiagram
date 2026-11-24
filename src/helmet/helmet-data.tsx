@@ -1,39 +1,21 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { BRAND_FULL, BRAND_URL } from '@/lib/brand';
+
+// LuxDBDiagram: page metadata names LuxDBDiag; ChartDB is credited in the full title.
+const DESCRIPTION =
+    "LuxForge's database diagram editor for producing LuxForge schemas: one DBML schema shown as Areas, with Dupes, Floats and schema files. Built on ChartDB.";
 
 export const HelmetData: React.FC = () => (
     <Helmet>
-        <meta
-            name="description"
-            content="Free and Open-source database diagrams editor, visualize and design your database with a single query. Tool to help you draw your DB relationship diagrams and export DDL scripts."
-        />
+        <meta name="description" content={DESCRIPTION} />
         <meta property="og:type" content="website" />
-        <meta
-            property="og:title"
-            content="ChartDB - Database schema diagrams visualizer"
-        />
-        <meta
-            property="og:description"
-            content="Free and Open-source database diagrams editor, visualize and design your database with a single query. Tool to help you draw your DB relationship diagrams and export DDL scripts."
-        />
-        <meta
-            property="og:image"
-            content="https://app.chartdb.io/chartdb.png"
-        />
-        <meta property="og:url" content="https://app.chartdb.io" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta
-            name="twitter:title"
-            content="ChartDB - Database schema diagrams visualizer"
-        />
-        <meta
-            name="twitter:description"
-            content="Free and Open-source database diagrams editor, visualize and design your database with a single query. Tool to help you draw your DB relationship diagrams and export DDL scripts."
-        />
-        <meta
-            name="twitter:image"
-            content="https://github.com/chartdb/chartdb/raw/main/public/chartdb.png"
-        />
-        <title>ChartDB - Database schema diagrams visualizer</title>
+        <meta property="og:title" content={BRAND_FULL} />
+        <meta property="og:description" content={DESCRIPTION} />
+        <meta property="og:url" content={BRAND_URL} />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={BRAND_FULL} />
+        <meta name="twitter:description" content={DESCRIPTION} />
+        <title>{BRAND_FULL}</title>
     </Helmet>
 );
