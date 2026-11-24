@@ -4,6 +4,18 @@
 
 @layer base {
     :root {
+        /* LuxDBDiagram: accent colour (purple) until the chosen accent is applied; see src/lib/accent. */
+        --lux-accent-50: 250 245 255;
+        --lux-accent-100: 243 232 255;
+        --lux-accent-200: 233 213 255;
+        --lux-accent-300: 216 180 254;
+        --lux-accent-400: 192 132 252;
+        --lux-accent-500: 168 85 247;
+        --lux-accent-600: 147 51 234;
+        --lux-accent-700: 126 34 206;
+        --lux-accent-800: 107 33 168;
+        --lux-accent-900: 88 28 135;
+        --lux-accent-950: 59 7 100;
         --background: 0 0% 100%;
         --foreground: 222.2 84% 4.9%;
         --card: 0 0% 100%;

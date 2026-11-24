@@ -37,6 +37,9 @@ only. How it is built and deployed is described in
 
 Diagrams are saved in the browser you use. Export them as JSON or DBML to keep or move them.
 
+**Settings → Accent colour** changes the accent from the default purple to one of ten colours,
+including ChartDB's original pink. The choice is saved in your browser.
+
 ## Running and testing locally
 
 Requires Node.js 24 (see `.nvmrc`). No database or backend is needed.

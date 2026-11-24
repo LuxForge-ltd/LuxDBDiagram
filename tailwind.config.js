@@ -21,6 +21,14 @@ module.exports = {
                 ]
     		},
     		colors: {
+                // LuxDBDiagram: ChartDB's pink accent classes follow the chosen accent colour
+                // (CSS variables set by src/lib/accent/apply-accent.ts; defaults in globals.css).
+                pink: Object.fromEntries(
+                    [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((shade) => [
+                        shade,
+                        `rgb(var(--lux-accent-${shade}) / <alpha-value>)`,
+                    ])
+                ),
     			border: 'hsl(var(--border))',
     			input: 'hsl(var(--input))',
     			ring: 'hsl(var(--ring))',

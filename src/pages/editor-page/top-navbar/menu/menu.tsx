@@ -16,6 +16,7 @@ import { useChartDB } from '@/hooks/use-chartdb';
 import { useDialog } from '@/hooks/use-dialog';
 import { useExportImage } from '@/hooks/use-export-image';
 import { useDBMLFileExport } from '@/hooks/use-dbml-file-export';
+import { SettingsMenu } from './settings-menu';
 import { databaseTypeToLabelMap } from '@/lib/databases';
 import { DatabaseType } from '@/lib/domain/database-type';
 import {
@@ -495,6 +496,8 @@ export const Menu: React.FC<MenuProps> = () => {
                     </MenubarItem>
                 </MenubarContent>
             </MenubarMenu>
+
+            <SettingsMenu />
 
             <MenubarMenu>
                 <MenubarTrigger>{t('menu.help.help')}</MenubarTrigger>
