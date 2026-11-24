@@ -49,6 +49,7 @@ export interface DBMLImportIssue {
         | 'area_duplicate_name'
         | 'area_unknown_setting'
         | 'area_invalid_color'
+        | 'area_invalid_file'
         | 'area_duplicate_table'
         | 'area_missing_table'
         | 'area_ambiguous_table'
@@ -81,6 +82,8 @@ export interface ParsedArea {
     name: string;
     color?: string;
     floatFilter?: AreaFloatFilter;
+    /** `file:` setting: the schema file the Area stands for. */
+    fileName?: string;
     entries: ParsedAreaEntry[];
     line: number;
 }
@@ -95,6 +98,31 @@ const ENTRY_PATTERN = new RegExp(
     'i'
 );
 const COLOR_PATTERN = /^#[0-9a-fA-F]{3,8}$/;
+
+/** Comment lines LuxDBDiagram writes when it combines files (file headers, Area sections). */
+const GENERATED_COMMENT_LINE =
+    /^[ \t]*\/\/ ==== (?:file: .+|LuxDBDiag: .+) ====[ \t]*$/gm;
+
+/**
+ * Cleans an Area's `file:` setting: removes quotes, uses forward slashes, and refuses empty
+ * names, absolute paths and paths that climb out of the folder.
+ *
+ * @param value The setting as written.
+ * @returns The file name, or null when it cannot be used.
+ */
+export const normalizeAreaFileName = (value: string): string | null => {
+    const unquoted = value
+        .trim()
+        .replace(/^(['"])(.*)\1$/, '$2')
+        .trim();
+    const name = unquoted.replace(/\\/g, '/').replace(/^\.\//, '');
+    if (!name || name.startsWith('/') || /^[A-Za-z]:/.test(name)) return null;
+    if (name.split('/').some((part) => part === '..' || part === '')) {
+        return null;
+    }
+    return name;
+};
+
 const PLAIN_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 /** Removes the quotes and escapes from a DBML name token. */
@@ -198,6 +226,7 @@ const parseAreaBlock = (
 
     let color: string | undefined;
     let floatFilter: AreaFloatFilter | undefined;
+    let fileName: string | undefined;
     for (const setting of parseSettings(headerMatch[2])) {
         if (setting.key === 'color' && typeof setting.value === 'string') {
             if (COLOR_PATTERN.test(setting.value)) {
@@ -215,6 +244,21 @@ const parseAreaBlock = (
             (setting.value === 'all' || setting.value === 'outgoing')
         ) {
             floatFilter = setting.value;
+        } else if (
+            setting.key === 'file' &&
+            typeof setting.value === 'string'
+        ) {
+            const value = normalizeAreaFileName(setting.value);
+            if (value) {
+                fileName = value;
+            } else {
+                issues.push({
+                    severity: 'warning',
+                    code: 'area_invalid_file',
+                    message: `Area "${name}": "${setting.value}" is not a usable file name and was ignored.`,
+                    ...headerPosition,
+                });
+            }
         } else {
             issues.push({
                 severity: 'warning',
@@ -242,7 +286,7 @@ const parseAreaBlock = (
         if (entry) entries.push(entry);
     });
 
-    return { name, color, floatFilter, entries };
+    return { name, color, floatFilter, fileName, entries };
 };
 
 /** Parses one line of an Area block, pushing problems onto `issues`. */
@@ -459,6 +503,7 @@ export const resolveParsedAreas = (
                     name: area.name,
                     color: area.color,
                     floatFilter: area.floatFilter ?? null,
+                    fileName: area.fileName ?? null,
                     order: areaViews.length,
                     tables: laidOut,
                     floats: floats.filter(
@@ -518,7 +563,12 @@ export const serializeAreaViews = (
                 DEFAULT_AREA_FLOAT_FILTER
                     ? ''
                     : `, floats: ${effectiveFloatFilter(area.floatFilter)}`;
-            lines.push(`Area "${name}" [color: ${area.color}${floats}] {`);
+            const file = area.fileName
+                ? `, file: "${area.fileName.replace(/(["\\])/g, '\\$1')}"`
+                : '';
+            lines.push(
+                `Area "${name}" [color: ${area.color}${floats}${file}] {`
+            );
 
             for (const instance of area.tables) {
                 const table = tablesById.get(instance.tableId);
@@ -548,12 +598,16 @@ export const serializeAreaViews = (
  * Builds the warning shown when DBML line comments will not survive the import. ChartDB's
  * schema model has nowhere to keep `//` comments; table and column `note:` values are kept.
  *
+ * The `// ==== … ====` lines LuxDBDiagram writes itself when combining files are not counted.
+ *
  * @param content The DBML that was imported.
  * @returns A warning, or null when there are no line comments.
  */
 export const commentLossWarning = (content: string): DBMLImportIssue | null => {
-    const { lineComments } = maskCommentsAndStrings(content);
-    if (lineComments === 0) return null;
+    const generated = (content.match(GENERATED_COMMENT_LINE) ?? []).length;
+    const lineComments =
+        maskCommentsAndStrings(content).lineComments - generated;
+    if (lineComments <= 0) return null;
     return {
         severity: 'warning',
         code: 'comments_not_kept',

@@ -30,7 +30,10 @@ only. How it is built and deployed is described in
 
 1. Create a diagram and choose **DBML** import.
 2. Paste DBML, or use **Open files…** to load several `.dbml` files at once, for example a schema
-   file and a file of `Area` blocks.
+   file and a file of `Area` blocks. **Open folder…** opens a whole folder of `.dbml` files:
+   - each ticked file becomes an Area named after the file;
+   - click a file to view or edit it in the editor before importing;
+   - files that look like combined copies of the others start unticked.
 3. Use the Area tabs above the canvas and the **Areas** panel in the sidebar.
 4. Export with **Actions → Export as**, choosing either **DBML** (schema only) or **LuxDBDiagram DBML
    (with Areas)**.

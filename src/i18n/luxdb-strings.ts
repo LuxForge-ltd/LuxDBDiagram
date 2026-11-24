@@ -54,6 +54,29 @@ export const luxdbStrings = {
             files_merged_description:
                 'References between the files are resolved when the schema is imported.',
             files_conflict_title: 'The files define a table differently',
+            open_folder: 'Open folder…',
+            open_folder_title:
+                'Open a folder of .dbml files. Each ticked file becomes an Area showing the tables it defines; pick a file to view or edit it here before importing.',
+            folder_empty_title: 'No .dbml files in that folder',
+            folder_empty_description:
+                'Choose a folder that holds .dbml files (subfolders are searched too).',
+            folder_read_failed: 'The folder could not be read',
+            folder_combined: 'Combined import',
+            folder_combined_hint:
+                'What will be imported: the ticked files, then one Area per file. Read-only; edit a file instead.',
+            folder_close: 'Close folder',
+            folder_tables_one: '{{count}} table',
+            folder_tables_other: '{{count}} tables',
+            folder_looks_combined:
+                'Looks like a combined copy of other files, so it starts unticked',
+            folder_defines_areas: 'Writes its own Area blocks',
+            folder_areas_one: '{{count}} Area',
+            folder_areas_other: '{{count}} Areas',
+            folder_shared_one:
+                '{{count}} table is in more than one file; each of those files shows it.',
+            folder_shared_other:
+                '{{count}} tables are in more than one file; each of those files shows them.',
+            folder_include: 'Include {{file}}',
         },
         export: {
             enhanced_dbml: 'LuxDBDiagram DBML (with Areas)',
