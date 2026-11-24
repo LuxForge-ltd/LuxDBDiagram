@@ -116,7 +116,29 @@ two different definitions of the same table stop the import with both locations 
   the marker for the open Area is filled with its colour. Clicking a number opens that Area, centres
   the table and briefly highlights it. In the "All tables" view, every table that is in at least one
   Area shows its markers, as a way into the Areas.
-- Navigation (markers, and Float rows in a later phase) waits until the target Area is on screen
+- **Floats.** Every relationship with one end in the open Area and the other outside it is drawn as a
+  dashed line from the shown column to a row on a Float card for the off-Area table. One card per
+  off-Area table; one row per relationship.
+  - Each row reads `referencing.column [glyph] referenced.column`: the column holding the foreign
+    key first. The glyph is a miniature line with a crow's foot at both ends (exactly one, zero or
+    one, one or many, zero or many), derived from the schema as described below.
+  - A card shows three rows; "Show N more" expands it and "Show less" collapses it. Lines for hidden
+    rows still reach the card, fainter, ending on its footer.
+  - The card's border and badge use the colour and name of the first Area that shows the table.
+  - Clicking a row opens that first Area, centres the table and highlights the column. If no Area
+    shows the table, the row offers "Add it to this Area" and "Show it in All tables". Adding the
+    table replaces its Float with ordinary relationship lines; removing it brings the Float back.
+  - Cards can be moved; their position and expanded state are stored with the Area. Unplaced cards
+    sit in columns to the right of the Area's tables, near the tables they connect to, wrapping into
+    more columns rather than growing one very tall stack.
+- **Float filter.** A widely referenced table (for example `users`, referenced by an `updated_by`
+  column on almost every GAP table) brings a Float for every table that references it. The control
+  at the top right of the canvas switches an Area between **All** (the default) and **Outgoing**:
+  Floats only for tables the Area's columns point at, with the incoming references summarised on one
+  "Referenced from outside this Area" card (one row and one line per referenced column, with the
+  number of referencing tables). Nothing is hidden silently; "Show these as Floats" switches back.
+  Enhanced DBML stores the setting as `Area "Matches" [floats: outgoing] { ... }`.
+- Navigation (markers and Float rows) waits until the target Area is on screen
   before centring, because a table's node has the same id in every view.
 - Undo and redo cover Area changes (create, delete, rename, recolour, reorder, membership, moves).
 - Import shows Area problems (missing or ambiguous tables, repeats, unknown settings) and lost `//`
@@ -144,6 +166,10 @@ express, so it is never guessed.
   column `note:` values are kept. Import warns when comments will be lost.
 - ChartDB's DBML export leaves out tables with no columns. Export warns when this happens.
 - `TableGroup` blocks are still dropped on import, as in ChartDB.
+- ChartDB imports a composite foreign key (`Ref: a.(x, y) > b.(x, y)`) as its first column pair
+  only, so a Float row (and the ordinary relationship line) shows that pair.
+- Columns of database views have no connection points in ChartDB, so a relationship on a view
+  column has no Float line (the row is still on the Float card).
 
 ## Delivery
 

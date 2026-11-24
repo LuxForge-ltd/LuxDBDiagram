@@ -381,3 +381,21 @@ describe('commentLossWarning', () => {
         expect(commentLossWarning('Table t {\n id int\n}')).toBeNull();
     });
 });
+
+describe('Float filter setting', () => {
+    it('reads and writes [floats: outgoing] on an Area', () => {
+        const { areas, issues } = extractAreaBlocks(
+            'Area "Users" [color: #b067e9, floats: outgoing] {\n  users\n}'
+        );
+        expect(issues).toEqual([]);
+        const { areaViews } = resolveParsedAreas(areas, {
+            tables,
+            relationships,
+            generateId,
+        });
+        expect(areaViews[0].floatFilter).toBe('outgoing');
+
+        const text = serializeAreaViews(areaViews, { tables });
+        expect(text).toContain('[color: #b067e9, floats: outgoing]');
+    });
+});

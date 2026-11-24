@@ -118,6 +118,9 @@ export const buildAreaView = (
         tables: dedupeInstances(attributes.tables ?? []),
         floats: attributes.floats ?? [],
         createdAt: attributes.createdAt ?? Date.now(),
+        ...(attributes.floatFilter
+            ? { floatFilter: attributes.floatFilter }
+            : {}),
     };
 };
 

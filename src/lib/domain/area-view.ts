@@ -41,8 +41,17 @@ export interface AreaView {
     /** At most one instance per canonical table. */
     tables: AreaViewTableInstance[];
     floats?: AreaViewFloatLayout[] | null;
+    /**
+     * Which Floats the Area shows. "all" (the default) shows every relationship that leaves
+     * the Area. "outgoing" shows Floats only for tables the Area's columns point at; the
+     * references coming in from outside are summarised on one card instead, so a widely
+     * referenced table (such as `users`) does not bring dozens of Floats with it.
+     */
+    floatFilter?: AreaFloatFilter | null;
     createdAt: number;
 }
+
+export type AreaFloatFilter = 'all' | 'outgoing';
 
 export const areaViewTableInstanceSchema: z.ZodType<AreaViewTableInstance> =
     z.object({
@@ -66,5 +75,6 @@ export const areaViewSchema: z.ZodType<AreaView> = z.object({
     order: z.number(),
     tables: z.array(areaViewTableInstanceSchema),
     floats: z.array(areaViewFloatLayoutSchema).or(z.null()).optional(),
+    floatFilter: z.enum(['all', 'outgoing']).or(z.null()).optional(),
     createdAt: z.number(),
 });

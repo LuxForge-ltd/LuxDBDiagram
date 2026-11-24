@@ -128,6 +128,14 @@ import { useAreaViewport } from './area-view/use-area-viewport';
 import { useAreaDragAndDrop } from './area-view/use-area-drag-and-drop';
 import { AreaTabs } from './area-view/area-tabs';
 import { AreaEmptyState } from './area-view/area-empty-state';
+import { useAreaFloats } from './area-view/use-area-floats';
+import type { FloatNodeType } from './float-node/float-node';
+import { FloatNode } from './float-node/float-node';
+import type { FloatEdgeType } from './float-node/float-edge';
+import { FloatEdge } from './float-node/float-edge';
+import type { IncomingSummaryNodeType } from './float-node/incoming-summary-node';
+import { IncomingSummaryNode } from './float-node/incoming-summary-node';
+import { AreaFloatControls } from './area-view/area-float-controls';
 
 // LuxDBDiagram: ChartDB Groups (rectangles) and notes belong to the "All tables" layout,
 // so an open Area shows neither. Stable empty arrays keep memoised hooks quiet.
@@ -140,14 +148,17 @@ const DEFAULT_EDGE_Z_INDEX = 0;
 export type EdgeType =
     | RelationshipEdgeType
     | DependencyEdgeType
-    | TempFloatingEdgeType;
+    | TempFloatingEdgeType
+    | FloatEdgeType;
 
 export type NodeType =
     | TableNodeType
     | AreaNodeType
     | NoteNodeType
     | TempCursorNodeType
-    | CreateRelationshipNodeType;
+    | CreateRelationshipNodeType
+    | FloatNodeType
+    | IncomingSummaryNodeType;
 
 type AddEdgeParams = Parameters<typeof addEdge<EdgeType>>[0];
 
@@ -155,6 +166,7 @@ const edgeTypes: EdgeTypes = {
     'relationship-edge': RelationshipEdge,
     'dependency-edge': DependencyEdge,
     'temp-floating-edge': TempFloatingEdge,
+    'float-edge': FloatEdge,
 };
 
 const nodeTypes: NodeTypes = {
@@ -163,6 +175,8 @@ const nodeTypes: NodeTypes = {
     note: NoteNode,
     'temp-cursor': TempCursorNode,
     'create-relationship': CreateRelationshipNode,
+    float: FloatNode,
+    'float-summary': IncomingSummaryNode,
 };
 
 const initialEdges: EdgeType[] = [];
@@ -329,6 +343,11 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
     const notes = isAreaMode ? NO_NOTES : canonicalNotes;
     useAreaViewport();
     const areaDragAndDrop = useAreaDragAndDrop({ isAreaMode, readonly });
+    const { floatNodes, floatEdges, applyFloatPositionChanges, floatCounts } =
+        useAreaFloats({
+            areaView: areaProjection.currentAreaView,
+            crossRelationships,
+        });
     const { showSidePanel } = useLayout();
     const { effectiveTheme } = useTheme();
     const { scrollAction, showDBViews, showMiniMapOnCanvas } = useLocalConfig();
@@ -433,7 +452,11 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
     useEffect(() => {
         // Force React Flow to re-register handles for all table nodes
         // This ensures handles exist before edges reference them
-        const tableNodeIds = tables.map((t) => t.id);
+        // (LuxDBDiagram: Float nodes too, whose rows are line endpoints).
+        const tableNodeIds = [
+            ...tables.map((t) => t.id),
+            ...floatNodes.map((node) => node.id),
+        ];
         if (tableNodeIds.length > 0) {
             updateNodeInternals(tableNodeIds);
         }
@@ -502,6 +525,15 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                             animated: prevState?.animated ?? false,
                         };
                     }),
+                    // LuxDBDiagram: lines from shown columns to their Float rows.
+                    ...floatEdges.map((edge): FloatEdgeType => {
+                        const prevState = prevEdgeStates.get(edge.id);
+                        return {
+                            ...edge,
+                            selected: prevState?.selected ?? false,
+                            animated: prevState?.animated ?? false,
+                        };
+                    }),
                 ];
             });
         }, 100); // Delay to let handles register after updateNodeInternals
@@ -514,6 +546,8 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
         showDBViews,
         tables,
         updateNodeInternals,
+        floatNodes,
+        floatEdges,
     ]);
 
     useEffect(() => {
@@ -696,6 +730,7 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                     })
                 ),
                 ...notes.map((note) => noteToNoteNode(note)),
+                ...floatNodes,
                 ...prevNodes.filter(
                     (n) =>
                         n.type === 'temp-cursor' ||
@@ -727,6 +762,7 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
         relationships,
         isAreaMode,
         crossRelationships,
+        floatNodes,
     ]);
 
     // Surgical update for relationship creation target highlighting
@@ -1187,6 +1223,17 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
             const { positionChanges, removeChanges, sizeChanges } =
                 findRelevantNodesChanges(changesToApply, 'table');
 
+            // LuxDBDiagram: a moved Float keeps its new place in this Area.
+            const floatPositionChanges = [
+                ...findRelevantNodesChanges(changesToApply, 'float')
+                    .positionChanges,
+                ...findRelevantNodesChanges(changesToApply, 'float-summary')
+                    .positionChanges,
+            ];
+            if (floatPositionChanges.length > 0) {
+                applyFloatPositionChanges(floatPositionChanges);
+            }
+
             // Calculate child table movements from area position changes
             const childTableMovements: Map<
                 string,
@@ -1431,6 +1478,7 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
             getNode,
             isAreaMode,
             applyAreaTableChanges,
+            applyFloatPositionChanges,
         ]
     );
 
@@ -1926,6 +1974,18 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                     </Panel>
                     {isAreaMode && tables.length === 0 ? (
                         <AreaEmptyState />
+                    ) : null}
+                    {areaProjection.currentAreaView ? (
+                        <Panel
+                            position="top-right"
+                            className="!m-0"
+                            style={{ top: isDesktop ? 10 : 104, right: 10 }}
+                        >
+                            <AreaFloatControls
+                                areaView={areaProjection.currentAreaView}
+                                counts={floatCounts}
+                            />
+                        </Panel>
                     ) : null}
                     {isLoadingDOM ? (
                         <Controls
