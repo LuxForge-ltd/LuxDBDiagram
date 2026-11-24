@@ -92,6 +92,17 @@ two different definitions of the same table stop the import with both locations 
   open Area is remembered per diagram in the browser, and each view keeps its own pan and zoom.
 - The **Areas** panel (sidebar) lists Areas with their table counts. Areas can be opened, renamed
   (double-click), recoloured, reordered (drag handle) and deleted. Deleting an Area never deletes tables.
+- With an Area open, the Areas panel also shows the **table library**: every table in the schema,
+  searchable, with a tick for tables already in the Area and a count of the Areas each table is in.
+  - Drag a table from the library onto the canvas to add it at that spot, or use its **+** button to
+    add it below the Area's existing tables. A table already in the Area is never added twice; the
+    user is told and the existing one is brought into view.
+  - Drag a table node from the canvas onto the library to remove it from the Area. The library is
+    outlined while a table is being dragged so the target is clear. Ordinary moves on the canvas
+    never remove anything.
+- The table menu has **Remove from Area** (inside an Area) and **Add to Area**, which lists every
+  Area and **New Area**. With several tables selected, these apply to all of them, so an Area can be
+  built from a selection in the "All tables" view.
 - Inside an Area:
   - moving a table moves only that Area's copy of it;
   - **Delete** removes the table from the Area only; the table, its columns and relationships stay in

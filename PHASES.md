@@ -18,8 +18,8 @@ Handoff record for agent work in this repository, as required by LuxForge [AI Ag
 | Phase | Branch | Status | Version | Pull request | Commit approval |
 | --- | --- | --- | --- | --- | --- |
 | 01 Repository governance baseline | `phase-01-repository-governance-baseline` | Merged into `Dev` (`34564d2`) | 0.0.1 | [#1](https://github.com/LuxForge-ltd/LuxDBDiagram/pull/1) | "Approve, run all", 2026-11-24 |
-| 02 Areas and enhanced DBML | `phase-02-areas-enhanced-dbml` | Complete, checks passed on joyeuse | 0.0.2 | this pull request | "Approve, run all", 2026-11-24 |
-| 03 Visual membership management | `phase-03-visual-membership-management` | Planned | 0.0.3 | | "Approve, run all", 2026-11-24 |
+| 02 Areas and enhanced DBML | `phase-02-areas-enhanced-dbml` | Merged into `Dev` (`1bb13e5`) | 0.0.2 | [#2](https://github.com/LuxForge-ltd/LuxDBDiagram/pull/2) | "Approve, run all", 2026-11-24 |
+| 03 Visual membership management | `phase-03-visual-membership-management` | Complete, checks passed on joyeuse | 0.0.3 | this pull request | "Approve, run all", 2026-11-24 |
 | 04 Dupes and instance navigation | `phase-04-dupes-instance-navigation` | Planned | 0.0.4 | | "Approve, run all", 2026-11-24 |
 | 05 Float relationship cards | `phase-05-float-relationship-cards` | Planned | 0.0.5 | | "Approve, run all", 2026-11-24 |
 | 06 Persistence, export and validation | `phase-06-persistence-export-validation` | Planned | 0.0.6 | | "Approve, run all", 2026-11-24 |

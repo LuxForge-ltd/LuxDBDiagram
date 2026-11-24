@@ -25,7 +25,6 @@ import {
 import { useChartDB } from '@/hooks/use-chartdb';
 import { useAreaView } from '@/hooks/use-area-view';
 import { Button } from '@/components/button/button';
-import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import { EmptyState } from '@/components/empty-state/empty-state';
 import {
     getLiveInstances,
@@ -34,6 +33,7 @@ import {
 } from '@/lib/areas/area-view-ops';
 import { cn } from '@/lib/utils';
 import { AreaViewListItem } from './area-view-list-item';
+import { AreaTableLibrary } from './area-table-library';
 
 export const AreaViewsSection: React.FC = () => {
     const { t } = useTranslation();
@@ -43,6 +43,10 @@ export const AreaViewsSection: React.FC = () => {
     const sensors = useSensors(useSensor(PointerSensor));
 
     const ordered = useMemo(() => sortAreaViews(areaViews), [areaViews]);
+    const currentAreaView = useMemo(
+        () => areaViews.find((view) => view.id === currentAreaViewId) ?? null,
+        [areaViews, currentAreaViewId]
+    );
     const tableIds = useMemo(
         () => new Set(tables.map((table) => table.id)),
         [tables]
@@ -96,7 +100,13 @@ export const AreaViewsSection: React.FC = () => {
                 ) : null}
             </div>
 
-            <ScrollArea className="flex-1">
+            {/* With an Area open, the list shares the panel with the table library. */}
+            <div
+                className={cn(
+                    'overflow-y-auto',
+                    currentAreaView ? 'max-h-[40%] shrink-0' : 'flex-1'
+                )}
+            >
                 <div className="flex flex-col gap-1 pb-2">
                     <button
                         type="button"
@@ -157,7 +167,11 @@ export const AreaViewsSection: React.FC = () => {
                         </DndContext>
                     )}
                 </div>
-            </ScrollArea>
+            </div>
+
+            {currentAreaView ? (
+                <AreaTableLibrary areaView={currentAreaView} />
+            ) : null}
         </section>
     );
 };

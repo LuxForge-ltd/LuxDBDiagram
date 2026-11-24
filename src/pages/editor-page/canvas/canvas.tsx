@@ -125,6 +125,7 @@ import { useDiff } from '@/context/diff-context/use-diff';
 import { useClickAway } from 'react-use';
 import { useAreaCanvasProjection } from './area-view/use-area-canvas-projection';
 import { useAreaViewport } from './area-view/use-area-viewport';
+import { useAreaDragAndDrop } from './area-view/use-area-drag-and-drop';
 import { AreaTabs } from './area-view/area-tabs';
 import { AreaEmptyState } from './area-view/area-empty-state';
 
@@ -327,6 +328,7 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
     const areas = isAreaMode ? NO_GROUPS : groupAreas;
     const notes = isAreaMode ? NO_NOTES : canonicalNotes;
     useAreaViewport();
+    const areaDragAndDrop = useAreaDragAndDrop({ isAreaMode, readonly });
     const { showSidePanel } = useLayout();
     const { effectiveTheme } = useTheme();
     const { scrollAction, showDBViews, showMiniMapOnCanvas } = useLocalConfig();
@@ -1777,6 +1779,8 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                 id="canvas"
                 ref={containerRef}
                 onMouseMove={handleMouseMove}
+                onDragOver={areaDragAndDrop.onDragOver}
+                onDrop={areaDragAndDrop.onDrop}
             >
                 <ReactFlow
                     onlyRenderVisibleElements
@@ -1792,6 +1796,8 @@ export const Canvas: React.FC<CanvasProps> = ({ initialTables }) => {
                     maxZoom={5}
                     minZoom={0.1}
                     onConnect={onConnectHandler}
+                    onNodeDragStart={areaDragAndDrop.onNodeDragStart}
+                    onNodeDragStop={areaDragAndDrop.onNodeDragStop}
                     proOptions={{
                         hideAttribution: true,
                     }}
