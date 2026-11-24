@@ -144,7 +144,7 @@ const TemplatePageComponent: React.FC = () => {
                     </div>
                     <div className="flex flex-1 justify-end">
                         <iframe
-                            src={`https://ghbtns.com/github-btn.html?user=chartdb&repo=chartdb&type=star&size=large&text=false`}
+                            src={`https://ghbtns.com/github-btn.html?user=LuxForge-ltd&repo=LuxDBDiagram&type=star&size=large&text=false`}
                             width="40"
                             height="30"
                             title="GitHub"

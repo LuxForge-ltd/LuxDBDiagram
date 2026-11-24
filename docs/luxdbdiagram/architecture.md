@@ -228,4 +228,5 @@ the GAP schema.
 ## Delivery
 
 The work is delivered as phases, each on its own branch and pull request into `Dev`. `PHASES.md` records
-the plan, the approvals and each phase's branch, version and pull request.
+the plan, the approvals and each phase's branch, version and pull request. The hosted copy and how it
+is built, deployed and published are described in [deployment.md](deployment.md).
