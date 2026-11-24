@@ -1,7 +1,9 @@
 # LuxDBDiagram architecture
 
-LuxDBDiagram is LuxForge Ltd's fork of [ChartDB](https://github.com/chartdb/chartdb). It extends ChartDB
-so that large schemas can be explored as several focused views instead of one enormous diagram.
+LuxDBDiagram (in the app, LuxDBDiag, "LuxForge Database Diagrams built on ChartDB") is LuxForge Ltd's
+fork of [ChartDB](https://github.com/chartdb/chartdb), kept for producing LuxForge's own database
+schemas. It extends ChartDB so that large schemas can be explored as several focused views instead of
+one enormous diagram.
 
 The guiding rule is **one schema, many views**: the database schema (tables, columns, indexes,
 constraints, relationships) has exactly one definition. Everything LuxDBDiagram adds is presentation

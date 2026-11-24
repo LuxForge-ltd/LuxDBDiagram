@@ -47,7 +47,7 @@ export const TemplatesPageHelmet: React.FC<TemplatesPageHelmetProps> = ({
                     Featured database schema diagram templates | ChartDB
                 </title>
             ) : (
-                <title>Database schema diagram templates | ChartDB</title>
+                <title>Database schema diagram templates | LuxDBDiag</title>
             )}
 
             {tag ? (
@@ -70,12 +70,12 @@ export const TemplatesPageHelmet: React.FC<TemplatesPageHelmetProps> = ({
             ) : isFeatured ? (
                 <meta
                     property="og:title"
-                    content="Featured database schema diagram templates | ChartDB"
+                    content="Featured database schema diagram templates | LuxDBDiag"
                 />
             ) : (
                 <meta
                     property="og:title"
-                    content="Database schema diagram templates | ChartDB"
+                    content="Database schema diagram templates | LuxDBDiag"
                 />
             )}
 
@@ -106,7 +106,7 @@ export const TemplatesPageHelmet: React.FC<TemplatesPageHelmetProps> = ({
             )}
             <meta property="og:image" content={`${HOST_URL}/chartdb.png`} />
             <meta property="og:type" content="website" />
-            <meta property="og:site_name" content="ChartDB" />
+            <meta property="og:site_name" content="LuxDBDiag" />
 
             {tag ? (
                 <meta
@@ -116,7 +116,7 @@ export const TemplatesPageHelmet: React.FC<TemplatesPageHelmetProps> = ({
             ) : (
                 <meta
                     name="twitter:title"
-                    content="Database schema diagram templates | ChartDB"
+                    content="Database schema diagram templates | LuxDBDiag"
                 />
             )}
 

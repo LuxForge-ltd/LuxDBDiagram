@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import ChartDBLogo from '@/assets/logo-light.png';
-import ChartDBDarkLogo from '@/assets/logo-dark.png';
-import { useTheme } from '@/hooks/use-theme';
+import { BrandMark } from '@/components/brand-mark/brand-mark';
 import { LocalConfigProvider } from '@/context/local-config-context/local-config-provider';
 import { ThemeProvider } from '@/context/theme-context/theme-provider';
 import { Button } from '@/components/button/button';
@@ -51,8 +49,6 @@ const TemplatePageComponent: React.FC = () => {
         }
     }, [template, navigate]);
 
-    const { effectiveTheme } = useTheme();
-
     const cloneTemplate = useCallback(async () => {
         if (APP_URL) {
             window.location.href = `${APP_URL}/templates/clone/${templateSlug}`;
@@ -96,7 +92,7 @@ const TemplatePageComponent: React.FC = () => {
                             content={`${HOST_URL}${template.image}`}
                         />
                         <meta property="og:type" content="website" />
-                        <meta property="og:site_name" content="ChartDB" />
+                        <meta property="og:site_name" content="LuxDBDiag" />
                         <meta
                             name="twitter:title"
                             content={`Database schema for - ${template.name} | ChartDB`}
@@ -117,7 +113,7 @@ const TemplatePageComponent: React.FC = () => {
                         <meta name="twitter:creator" content="@ChartDB_io" />
                     </>
                 ) : (
-                    <title>Database Schema Diagram | ChartDB</title>
+                    <title>Database Schema Diagram | LuxDBDiag</title>
                 )}
             </Helmet>
 
@@ -126,19 +122,11 @@ const TemplatePageComponent: React.FC = () => {
                     <div className="flex flex-1 justify-start gap-x-3">
                         <div className="flex items-center font-primary">
                             <a
-                                href="https://chartdb.io"
+                                href="/"
                                 className="cursor-pointer"
                                 rel="noreferrer"
                             >
-                                <img
-                                    src={
-                                        effectiveTheme === 'light'
-                                            ? ChartDBLogo
-                                            : ChartDBDarkLogo
-                                    }
-                                    alt="chartDB"
-                                    className="h-4 max-w-fit"
-                                />
+                                <BrandMark />
                             </a>
                         </div>
                     </div>
