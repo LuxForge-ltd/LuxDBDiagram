@@ -18,6 +18,7 @@ import { supportsCustomTypes } from '@/lib/domain/database-capabilities';
 import { DBMLSection } from './dbml-section/dbml-section';
 import { RefsSection } from './refs-section/refs-section';
 import { VisualsSection } from './visuals-section/visuals-section';
+import { AreaViewsSection } from './areas-section/area-views-section';
 
 export interface SidePanelProps {}
 
@@ -48,6 +49,9 @@ export const SidePanel: React.FC<SidePanelProps> = () => {
                                 <SelectItem value="tables">
                                     {t('side_panel.tables_section.tables')}
                                 </SelectItem>
+                                <SelectItem value="areaViews">
+                                    {t('luxdb.sidebar.areas')}
+                                </SelectItem>
                                 <SelectItem value="refs">
                                     {t('side_panel.refs_section.refs')}
                                 </SelectItem>
@@ -77,6 +81,8 @@ export const SidePanel: React.FC<SidePanelProps> = () => {
                 <RefsSection />
             ) : selectedSidebarSection === 'visuals' ? (
                 <VisualsSection />
+            ) : selectedSidebarSection === 'areaViews' ? (
+                <AreaViewsSection />
             ) : (
                 <CustomTypesSection />
             )}

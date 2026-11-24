@@ -45,6 +45,9 @@ export const HistoryProvider: React.FC<React.PropsWithChildren> = ({
         addNotes,
         removeNotes,
         updateNote,
+        addAreaViews,
+        removeAreaViews,
+        updateAreaViews,
     } = useChartDB();
 
     const redoActionHandlers = useMemo(
@@ -174,8 +177,20 @@ export const HistoryProvider: React.FC<React.PropsWithChildren> = ({
             updateNote: ({ redoData: { noteId, note } }) => {
                 return updateNote(noteId, note, { updateHistory: false });
             },
+            addAreaViews: ({ redoData: { areaViews } }) => {
+                return addAreaViews(areaViews, { updateHistory: false });
+            },
+            removeAreaViews: ({ redoData: { areaViewIds } }) => {
+                return removeAreaViews(areaViewIds, { updateHistory: false });
+            },
+            updateAreaViews: ({ redoData: { updates } }) => {
+                return updateAreaViews(updates, { updateHistory: false });
+            },
         }),
         [
+            addAreaViews,
+            removeAreaViews,
+            updateAreaViews,
             addTables,
             removeTables,
             updateTable,
@@ -347,8 +362,20 @@ export const HistoryProvider: React.FC<React.PropsWithChildren> = ({
             updateNote: ({ undoData: { noteId, note } }) => {
                 return updateNote(noteId, note, { updateHistory: false });
             },
+            addAreaViews: ({ undoData: { areaViewIds } }) => {
+                return removeAreaViews(areaViewIds, { updateHistory: false });
+            },
+            removeAreaViews: ({ undoData: { areaViews } }) => {
+                return addAreaViews(areaViews, { updateHistory: false });
+            },
+            updateAreaViews: ({ undoData: { updates } }) => {
+                return updateAreaViews(updates, { updateHistory: false });
+            },
         }),
         [
+            addAreaViews,
+            removeAreaViews,
+            updateAreaViews,
             addTables,
             removeTables,
             updateTable,

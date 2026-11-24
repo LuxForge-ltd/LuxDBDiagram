@@ -31,6 +31,12 @@ import {
     getPositionFromIndex,
 } from './dbml-import-error';
 import { validateCheckConstraintWithDetails } from '@/lib/check-constraints/check-constraints-validator';
+import type { DBMLImportIssue } from '@/lib/areas/area-dbml';
+import {
+    commentLossWarning,
+    extractAreaBlocks,
+    resolveParsedAreas,
+} from '@/lib/areas/area-dbml';
 
 export const defaultDBMLDiagramName = 'DBML Import';
 
@@ -369,7 +375,78 @@ const relationToCardinality = (relation: '1' | '*'): Cardinality => {
     return relation === '1' ? 'one' : 'many';
 };
 
+export interface DBMLImportOptions {
+    databaseType: DatabaseType;
+    /**
+     * Receives the problems found that did not stop the import (for example an Area that
+     * names a missing table, or comments that will not be kept), so the UI can show them.
+     */
+    onIssues?: (issues: DBMLImportIssue[]) => void;
+}
+
+/**
+ * Imports DBML, including LuxDBDiagram's enhanced `Area` blocks.
+ *
+ * Area blocks are lifted out first (keeping line numbers), the remaining ordinary DBML goes
+ * through ChartDB's importer unchanged, and the Areas are then resolved against the imported
+ * tables. Plain DBML without Area blocks imports exactly as it does in ChartDB.
+ *
+ * @param dbmlContent DBML text, optionally with Area blocks.
+ * @param options Target database type and an optional issue callback.
+ * @returns The imported diagram, with `areaViews` when the text had Area blocks.
+ * @throws DBMLValidationError for malformed Area blocks or duplicate Area names, and any
+ *         error ChartDB's importer raises for the schema itself.
+ */
 export const importDBMLToDiagram = async (
+    dbmlContent: string,
+    options: DBMLImportOptions
+): Promise<Diagram> => {
+    const extraction = extractAreaBlocks(dbmlContent);
+    throwFirstError(extraction.issues);
+
+    const diagram = await importStandardDBMLToDiagram(
+        extraction.content,
+        options
+    );
+    const issues: DBMLImportIssue[] = [...extraction.issues];
+
+    if (extraction.areas.length > 0) {
+        const resolved = resolveParsedAreas(extraction.areas, {
+            tables: diagram.tables ?? [],
+            relationships: diagram.relationships ?? [],
+            defaultSchema: defaultSchemas[options.databaseType],
+            generateId,
+        });
+        throwFirstError(resolved.issues);
+        issues.push(...resolved.issues);
+        diagram.areaViews = resolved.areaViews;
+    }
+
+    const commentWarning = commentLossWarning(dbmlContent);
+    if (commentWarning) {
+        issues.push(commentWarning);
+    }
+
+    options.onIssues?.(issues);
+    return diagram;
+};
+
+/** Raises the first error-level issue as a DBMLValidationError, so editors can mark it. */
+const throwFirstError = (issues: readonly DBMLImportIssue[]): void => {
+    const blocking = issues.find((issue) => issue.severity === 'error');
+    if (blocking) {
+        throw new DBMLValidationError(
+            blocking.message,
+            blocking.line ?? 1,
+            blocking.column ?? 1
+        );
+    }
+};
+
+/**
+ * ChartDB's original DBML importer, for ordinary DBML (no Area blocks).
+ */
+const importStandardDBMLToDiagram = async (
     dbmlContent: string,
     options: {
         databaseType: DatabaseType;

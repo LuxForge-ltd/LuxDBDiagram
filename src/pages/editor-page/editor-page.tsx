@@ -21,6 +21,7 @@ import { Spinner } from '@/components/spinner/spinner';
 import { Helmet } from 'react-helmet-async';
 import { AlertProvider } from '@/context/alert-context/alert-provider';
 import { CanvasProvider } from '@/context/canvas-context/canvas-provider';
+import { AreaViewProvider } from '@/context/area-view-context/area-view-provider';
 import { HIDE_CHARTDB_CLOUD } from '@/lib/env';
 import { useDiagramLoader } from './use-diagram-loader';
 import { DiffProvider } from '@/context/diff-context/diff-provider';
@@ -124,17 +125,19 @@ export const EditorPage: React.FC = () => (
                                         <DiagramFilterProvider>
                                             <HistoryProvider>
                                                 <ReactFlowProvider>
-                                                    <CanvasProvider>
-                                                        <ExportImageProvider>
-                                                            <AlertProvider>
-                                                                <DialogProvider>
-                                                                    <KeyboardShortcutsProvider>
-                                                                        <EditorPageComponent />
-                                                                    </KeyboardShortcutsProvider>
-                                                                </DialogProvider>
-                                                            </AlertProvider>
-                                                        </ExportImageProvider>
-                                                    </CanvasProvider>
+                                                    <AreaViewProvider>
+                                                        <CanvasProvider>
+                                                            <ExportImageProvider>
+                                                                <AlertProvider>
+                                                                    <DialogProvider>
+                                                                        <KeyboardShortcutsProvider>
+                                                                            <EditorPageComponent />
+                                                                        </KeyboardShortcutsProvider>
+                                                                    </DialogProvider>
+                                                                </AlertProvider>
+                                                            </ExportImageProvider>
+                                                        </CanvasProvider>
+                                                    </AreaViewProvider>
                                                 </ReactFlowProvider>
                                             </HistoryProvider>
                                         </DiagramFilterProvider>

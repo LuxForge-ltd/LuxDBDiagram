@@ -12,6 +12,7 @@ import type { Area } from '@/lib/domain/area';
 import type { DBCustomType } from '@/lib/domain/db-custom-type';
 import type { DiagramFilter } from '@/lib/domain/diagram-filter/diagram-filter';
 import type { Note } from '@/lib/domain/note';
+import type { AreaView } from '@/lib/domain/area-view';
 
 export const StorageProvider: React.FC<React.PropsWithChildren> = ({
     children,
@@ -53,6 +54,11 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             diagram_filters: EntityTable<
                 DiagramFilter & { diagramId: string },
                 'diagramId' // primary key "id" (for the typings only)
+            >;
+            // LuxDBDiagram Areas (presentation metadata, added in version 14)
+            area_views: EntityTable<
+                AreaView & { diagramId: string },
+                'id' // primary key "id" (for the typings only)
             >;
         };
 
@@ -236,6 +242,26 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             config: '++id, defaultDiagramId',
             diagram_filters: 'diagramId, tableIds, schemasIds',
             notes: '++id, diagramId, content, x, y, width, height, color',
+        });
+
+        // Version 14 (LuxDBDiagram): adds Area views. Existing stores are unchanged, so no
+        // upgrade step is needed; diagrams saved before this simply have no Areas.
+        dexieDB.version(14).stores({
+            diagrams:
+                '++id, name, databaseType, databaseEdition, createdAt, updatedAt',
+            db_tables:
+                '++id, diagramId, name, schema, x, y, fields, indexes, color, createdAt, width, comment, isView, isMaterializedView, order',
+            db_relationships:
+                '++id, diagramId, name, sourceSchema, sourceTableId, targetSchema, targetTableId, sourceFieldId, targetFieldId, type, createdAt',
+            db_dependencies:
+                '++id, diagramId, schema, tableId, dependentSchema, dependentTableId, createdAt',
+            areas: '++id, diagramId, name, x, y, width, height, color',
+            db_custom_types:
+                '++id, diagramId, schema, type, kind, values, fields',
+            config: '++id, defaultDiagramId',
+            diagram_filters: 'diagramId, tableIds, schemasIds',
+            notes: '++id, diagramId, content, x, y, width, height, color',
+            area_views: '++id, diagramId, name, order',
         });
 
         dexieDB.on('ready', async () => {
@@ -622,6 +648,49 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             [db]
         );
 
+    // LuxDBDiagram Area view operations
+    const addAreaView: StorageContext['addAreaView'] = useCallback(
+        async ({ areaView, diagramId }) => {
+            await db.area_views.add({ ...areaView, diagramId });
+        },
+        [db]
+    );
+
+    const updateAreaView: StorageContext['updateAreaView'] = useCallback(
+        async ({ id, attributes }) => {
+            await db.area_views.update(id, attributes);
+        },
+        [db]
+    );
+
+    const deleteAreaView: StorageContext['deleteAreaView'] = useCallback(
+        async ({ diagramId, id }) => {
+            await db.area_views.where({ id, diagramId }).delete();
+        },
+        [db]
+    );
+
+    const listAreaViews: StorageContext['listAreaViews'] = useCallback(
+        async (diagramId) => {
+            return await db.area_views
+                .where('diagramId')
+                .equals(diagramId)
+                .toArray();
+        },
+        [db]
+    );
+
+    const deleteDiagramAreaViews: StorageContext['deleteDiagramAreaViews'] =
+        useCallback(
+            async (diagramId) => {
+                await db.area_views
+                    .where('diagramId')
+                    .equals(diagramId)
+                    .delete();
+            },
+            [db]
+        );
+
     const addDiagram: StorageContext['addDiagram'] = useCallback(
         async ({ diagram }) => {
             const promises = [];
@@ -674,6 +743,13 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 ...notes.map((note) => addNote({ diagramId: diagram.id, note }))
             );
 
+            const areaViews = diagram.areaViews ?? [];
+            promises.push(
+                ...areaViews.map((areaView) =>
+                    addAreaView({ diagramId: diagram.id, areaView })
+                )
+            );
+
             await Promise.all(promises);
         },
         [
@@ -684,6 +760,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             addRelationship,
             addTable,
             addNote,
+            addAreaView,
         ]
     );
 
@@ -758,6 +835,15 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 );
             }
 
+            if (options.includeAreaViews) {
+                diagrams = await Promise.all(
+                    diagrams.map(async (diagram) => {
+                        diagram.areaViews = await listAreaViews(diagram.id);
+                        return diagram;
+                    })
+                );
+            }
+
             return diagrams;
         },
         [
@@ -768,6 +854,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             listRelationships,
             listTables,
             listNotes,
+            listAreaViews,
         ]
     );
 
@@ -813,6 +900,10 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 diagram.notes = await listNotes(id);
             }
 
+            if (options.includeAreaViews) {
+                diagram.areaViews = await listAreaViews(id);
+            }
+
             return diagram;
         },
         [
@@ -823,6 +914,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
             listRelationships,
             listTables,
             listNotes,
+            listAreaViews,
         ]
     );
 
@@ -854,6 +946,9 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                     db.notes.where('diagramId').equals(id).modify({
                         diagramId: attributes.id,
                     }),
+                    db.area_views.where('diagramId').equals(id).modify({
+                        diagramId: attributes.id,
+                    }),
                 ]);
             }
         },
@@ -870,6 +965,7 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 db.areas.where('diagramId').equals(id).delete(),
                 db.db_custom_types.where('diagramId').equals(id).delete(),
                 db.notes.where('diagramId').equals(id).delete(),
+                db.area_views.where('diagramId').equals(id).delete(),
             ]);
         },
         [db]
@@ -925,6 +1021,11 @@ export const StorageProvider: React.FC<React.PropsWithChildren> = ({
                 getDiagramFilter,
                 updateDiagramFilter,
                 deleteDiagramFilter,
+                addAreaView,
+                updateAreaView,
+                deleteAreaView,
+                listAreaViews,
+                deleteDiagramAreaViews,
             }}
         >
             {children}

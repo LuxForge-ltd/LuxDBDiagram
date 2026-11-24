@@ -8,6 +8,7 @@ import type { DBTable } from './domain/db-table';
 import type { Diagram } from './domain/diagram';
 import type { Note } from './domain/note';
 import { generateId as defaultGenerateId } from './utils';
+import { remapAreaViewIds } from './areas/area-view-ops';
 
 const generateIdsMapFromTable = (
     table: DBTable,
@@ -56,6 +57,10 @@ const generateIdsMapFromDiagram = (
 
     diagram.customTypes?.forEach((customType) => {
         idsMap.set(customType.id, generateId());
+    });
+
+    diagram.areaViews?.forEach((areaView) => {
+        idsMap.set(areaView.id, generateId());
     });
 
     return idsMap;
@@ -257,6 +262,11 @@ export const cloneDiagram = (
                 (customType): customType is DBCustomType => customType !== null
             ) ?? [];
 
+    // LuxDBDiagram Areas reference table ids, so they must follow the tables' new ids.
+    const areaViews = diagram.areaViews
+        ? remapAreaViewIds(diagram.areaViews, getNewId, generateId)
+        : undefined;
+
     return {
         diagram: {
             ...diagram,
@@ -267,6 +277,7 @@ export const cloneDiagram = (
             areas,
             notes,
             customTypes,
+            ...(areaViews ? { areaViews } : {}),
             createdAt: diagram.createdAt
                 ? new Date(diagram.createdAt)
                 : new Date(),

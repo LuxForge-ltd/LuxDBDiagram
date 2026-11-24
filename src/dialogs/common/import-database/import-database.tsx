@@ -153,14 +153,29 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
                 // Try to count tables/relationships for DBML
                 (async () => {
                     try {
+                        // LuxDBDiagram: show Area and comment warnings before importing.
+                        let importWarnings: ValidationResult['warnings'] = [];
                         const diagram = await importDBMLToDiagram(
                             scriptResult,
-                            { databaseType }
+                            {
+                                databaseType,
+                                onIssues: (issues) => {
+                                    importWarnings = issues.map((issue) => ({
+                                        message: issue.line
+                                            ? `Line ${issue.line}: ${issue.message}`
+                                            : issue.message,
+                                        type:
+                                            issue.code === 'comments_not_kept'
+                                                ? 'data_loss'
+                                                : 'compatibility',
+                                    }));
+                                },
+                            }
                         );
                         setSqlValidation({
                             isValid: true,
                             errors: [],
-                            warnings: [],
+                            warnings: importWarnings,
                             tableCount: diagram.tables?.length ?? 0,
                             relationshipCount:
                                 diagram.relationships?.length ?? 0,

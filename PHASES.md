@@ -17,8 +17,8 @@ Handoff record for agent work in this repository, as required by LuxForge [AI Ag
 
 | Phase | Branch | Status | Version | Pull request | Commit approval |
 | --- | --- | --- | --- | --- | --- |
-| 01 Repository governance baseline | `phase-01-repository-governance-baseline` | Complete, checks passed on joyeuse | 0.0.1 | this pull request | "Approve, run all", 2026-11-24 |
-| 02 Areas and enhanced DBML | `phase-02-areas-enhanced-dbml` | Planned | 0.0.2 | | "Approve, run all", 2026-11-24 |
+| 01 Repository governance baseline | `phase-01-repository-governance-baseline` | Merged into `Dev` (`34564d2`) | 0.0.1 | [#1](https://github.com/LuxForge-ltd/LuxDBDiagram/pull/1) | "Approve, run all", 2026-11-24 |
+| 02 Areas and enhanced DBML | `phase-02-areas-enhanced-dbml` | Complete, checks passed on joyeuse | 0.0.2 | this pull request | "Approve, run all", 2026-11-24 |
 | 03 Visual membership management | `phase-03-visual-membership-management` | Planned | 0.0.3 | | "Approve, run all", 2026-11-24 |
 | 04 Dupes and instance navigation | `phase-04-dupes-instance-navigation` | Planned | 0.0.4 | | "Approve, run all", 2026-11-24 |
 | 05 Float relationship cards | `phase-05-float-relationship-cards` | Planned | 0.0.5 | | "Approve, run all", 2026-11-24 |
@@ -31,3 +31,6 @@ Handoff record for agent work in this repository, as required by LuxForge [AI Ag
 - GitHub Actions is disabled for the repository and ChartDB's workflow files are removed in Phase 01. Do not re-enable them.
 - The `upstream` remote points at `chartdb/chartdb` for pulling in future ChartDB changes.
 - Version 0.1.0 is set only when the operator says so.
+- Pull requests must name the repository explicitly (`gh pr create --repo LuxForge-ltd/LuxDBDiagram`): as a fork, `gh` otherwise targets `chartdb/chartdb`.
+- GAP checks: `LUXDB_GAP_SCHEMA_DIR="L:/LuxForge/Grassroots Admin Portal/docs/architecture/schema" npx vitest run src/lib/areas`. On 2026-11-24 the GAP domain files had two broken references, reported to the operator: `finances.dbml` line 78 refers to `match_team_players` (the table is `match_team_player`), and `roles_groups.dbml` line 23 refers to `resource_groups`, which only `gap_combined.dbml` defines.
+- Phase 02 notes: Areas are stored in Dexie version 14 (`area_views`). In the code the concept is `AreaView`; ChartDB's own `Area` (canvas rectangles) is labelled "Groups" in the English UI only.
