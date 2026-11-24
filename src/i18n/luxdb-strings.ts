@@ -45,6 +45,21 @@ export const luxdbStrings = {
             already_in_area_description:
                 '{{tables}} already appears in this Area. A table appears at most once per Area.',
         },
+        import: {
+            open_files: 'Open files…',
+            open_files_title:
+                'Open one or more .dbml files. Several files are merged into one schema, so references between them resolve.',
+            files_merged_title_one: '{{count}} file loaded',
+            files_merged_title_other: '{{count}} files merged into one schema',
+            files_merged_description:
+                'References between the files are resolved when the schema is imported.',
+            files_conflict_title: 'The files define a table differently',
+        },
+        export: {
+            enhanced_dbml: 'LuxDBDiagram DBML (with Areas)',
+            warnings_title: 'Exported, with omissions',
+            failed_title: 'Could not export DBML',
+        },
         floats: {
             reference_count_one: '{{count}} ref',
             reference_count_other: '{{count}} refs',

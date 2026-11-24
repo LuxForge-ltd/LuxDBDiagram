@@ -230,3 +230,27 @@ export const locateMergedLine = (
     }
     return null;
 };
+
+/**
+ * Maps a line of merged DBML back to its source file using the `// ==== file: ... ====`
+ * header lines, so an error found in text pasted or loaded into the editor (where the file
+ * ranges are no longer known) can still name the file and line.
+ *
+ * @param content Merged DBML text.
+ * @param line 1-based line in that text.
+ * @returns The file and 1-based line in it, or null when the text has no file headers.
+ */
+export const locateLineByFileHeaders = (
+    content: string,
+    line: number
+): { file: string; line: number } | null => {
+    const lines = content.split('\n');
+    for (let index = Math.min(line, lines.length) - 1; index >= 0; index--) {
+        const header = /^\/\/ ==== file: (.+) ====$/.exec(lines[index]);
+        if (header) {
+            const fileLine = line - (index + 1);
+            return fileLine > 0 ? { file: header[1], line: fileLine } : null;
+        }
+    }
+    return null;
+};

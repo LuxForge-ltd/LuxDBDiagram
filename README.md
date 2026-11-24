@@ -45,6 +45,29 @@
 > See [docs/luxdbdiagram/architecture.md](docs/luxdbdiagram/architecture.md).
 > ChartDB's licence (AGPL-3.0) and attribution are retained; the rest of this README is ChartDB's own.
 
+### Running and testing LuxDBDiagram locally
+
+Requires Node.js 24 (see `.nvmrc`). No database or backend is needed.
+
+```bash
+npm ci            # install the exact dependency versions
+npm run dev       # start the editor at http://localhost:5173
+npx vitest run    # unit tests
+npm run build     # lint, type-check and production build
+```
+
+The Grassroots Admin Portal (GAP) schema tests run only when `LUXDB_GAP_SCHEMA_DIR` points at GAP's
+`docs/architecture/schema` folder (the schema is not stored in this repository):
+
+```bash
+LUXDB_GAP_SCHEMA_DIR="/path/to/Grassroots Admin Portal/docs/architecture/schema" npx vitest run src/lib/areas
+```
+
+To try Areas, create a diagram, choose **DBML** import, and either paste DBML with `Area` blocks or use
+**Open files…** to load several `.dbml` files at once (for example a schema file and a file of Area
+blocks). Then use the Area tabs above the canvas and the **Areas** panel in the sidebar. **Actions →
+Export as** offers **DBML** (schema only) and **LuxDBDiagram DBML (with Areas)**.
+
 <p align="center">
   <img width='700px' src="./public/chartdb.png">
 </p>
