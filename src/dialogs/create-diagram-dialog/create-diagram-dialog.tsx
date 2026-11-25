@@ -27,6 +27,9 @@ import {
     importDBMLToDiagram,
 } from '@/lib/dbml/dbml-import/dbml-import';
 import type { ImportMethod } from '@/lib/import-method/import-method';
+import type { DBMLFolderState } from '../common/import-database/dbml-folder/use-dbml-folder';
+import { repoDiagramName, toRepoSource } from '@/lib/github/repo-source';
+import { saveRepoSource } from '@/lib/github/repo-source-store';
 
 export interface CreateDiagramDialogProps extends BaseDialogProps {}
 
@@ -53,6 +56,8 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
     const navigate = useNavigate();
     const [parsedMetadata, setParsedMetadata] = useState<DatabaseMetadata>();
     const [isParsingMetadata, setIsParsingMetadata] = useState(false);
+    // LuxDBDiagram: the opened DBML folder, which may be a GitHub repository folder.
+    const [dbmlFolder, setDBMLFolder] = useState<DBMLFolderState | null>(null);
 
     useEffect(() => {
         setDatabaseEdition(undefined);
@@ -74,6 +79,7 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
         setScriptResult('');
         setImportMethod('query');
         setParsedMetadata(undefined);
+        setDBMLFolder(null);
     }, [dialog.open]);
 
     const hasExistingDiagram = (diagramId ?? '').trim().length !== 0;
@@ -100,7 +106,12 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
                 });
                 // Update the diagram name if it's the default
                 if (diagram.name === defaultDBMLDiagramName) {
-                    diagram.name = `Diagram ${diagramNumber}`;
+                    diagram.name = dbmlFolder?.repo
+                        ? repoDiagramName(
+                              dbmlFolder.repo.repo,
+                              dbmlFolder.repo.folder
+                          )
+                        : `Diagram ${diagramNumber}`;
                 }
             } else {
                 let metadata: DatabaseMetadata | undefined = databaseMetadata;
@@ -128,6 +139,19 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
             }
 
             await addDiagram({ diagram });
+            // LuxDBDiagram: remember the repository folder, so changes can be saved back.
+            if (importMethod === 'dbml' && dbmlFolder?.repo) {
+                await saveRepoSource(
+                    toRepoSource(
+                        diagram.id,
+                        dbmlFolder.repo,
+                        dbmlFolder.files
+                            .filter((file) => file.selected)
+                            .map((file) => file.path),
+                        Date.now()
+                    )
+                );
+            }
             await updateConfig({
                 config: { defaultDiagramId: diagram.id },
             });
@@ -136,6 +160,7 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
             navigate(`/diagrams/${diagram.id}`);
         },
         [
+            dbmlFolder,
             importMethod,
             databaseType,
             addDiagram,
@@ -266,6 +291,7 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
                         importMethod={importMethod}
                         setImportMethod={setImportMethod}
                         keepDialogAfterImport={true}
+                        onDBMLFolderChange={setDBMLFolder}
                     />
                 ) : step === CreateDiagramDialogStep.SELECT_TABLES ? (
                     <SelectTables

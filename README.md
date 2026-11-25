@@ -34,6 +34,9 @@ only. How it is built and deployed is described in
    - each ticked file becomes an Area named after the file;
    - click a file to view or edit it in the editor before importing;
    - files that look like combined copies of the others start unticked.
+
+   On the hosted copy, **Open repository…** opens a folder of a GitHub repository the same way, after
+   signing in with GitHub. The diagram remembers the repository, so its changes can be saved back.
 3. Use the Area tabs above the canvas and the **Areas** panel in the sidebar.
 4. Export with **Actions → Export as**, choosing either **DBML** (schema only) or **LuxDBDiagram DBML
    (with Areas)**.

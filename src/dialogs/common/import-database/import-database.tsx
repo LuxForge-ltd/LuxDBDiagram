@@ -51,7 +51,12 @@ import { locateLineByFileHeaders } from '@/lib/areas/multi-file-dbml';
 import { DBMLFilesButton } from './dbml-files-button';
 import { DBMLFolderButton } from './dbml-folder/dbml-folder-button';
 import { DBMLFolderPanel } from './dbml-folder/dbml-folder-panel';
-import { useDBMLFolder } from './dbml-folder/use-dbml-folder';
+import {
+    useDBMLFolder,
+    type DBMLFolderState,
+} from './dbml-folder/use-dbml-folder';
+import { GitHubRepoButton } from './github-repo/github-repo-picker';
+import { isGitHubAvailable } from '@/lib/github/github-client';
 import { sqlImportToDiagram } from '@/lib/data/sql-import';
 import {
     clearErrorHighlight,
@@ -86,6 +91,8 @@ export interface ImportDatabaseProps {
     importMethod: ImportMethod;
     setImportMethod: (method: ImportMethod) => void;
     importMethods?: ImportMethod[];
+    /** LuxDBDiagram: told about the opened DBML folder; also offers opening a GitHub repository. */
+    onDBMLFolderChange?: (folder: DBMLFolderState | null) => void;
 }
 
 export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
@@ -102,6 +109,7 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
     importMethod,
     setImportMethod,
     importMethods,
+    onDBMLFolderChange,
 }) => {
     const { effectiveTheme } = useTheme();
     const [errorMessage, setErrorMessage] = useState('');
@@ -133,6 +141,10 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
     useEffect(() => {
         if (folderComposed) setScriptResult(folderComposed.content);
     }, [folderComposed, setScriptResult]);
+    const openedFolder = dbmlFolder.folder;
+    useEffect(() => {
+        onDBMLFolderChange?.(openedFolder);
+    }, [openedFolder, onDBMLFolderChange]);
     const debouncedFolderFileChange = useDebounce(dbmlFolder.updateFile, 500);
     const folderActivePath = dbmlFolder.folder?.activePath ?? null;
     // The editor reports the text it is given when the shown file changes; that event can
@@ -228,12 +240,32 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
                     if (source) {
                         errorMsg = `${errorMsg} (${source.file}, line ${source.line})`;
                     }
-                    highlightErrorLine({
-                        error: validateResponse.parsedError,
-                        model: editorRef.current?.getModel(),
-                        editorDecorationsCollection:
-                            decorationsCollection.current,
-                    });
+                    // LuxDBDiagram: with one folder file shown, the line is in the combined
+                    // text; mark it only if it is in the shown file, at that file's line.
+                    const shownFile = folderActivePathRef.current;
+                    const shownLine =
+                        shownFile === null
+                            ? line
+                            : source?.file === shownFile
+                              ? source.line
+                              : null;
+                    const model = editorRef.current?.getModel();
+                    if (
+                        model &&
+                        shownLine !== null &&
+                        shownLine >= 1 &&
+                        shownLine <= model.getLineCount()
+                    ) {
+                        highlightErrorLine({
+                            error: {
+                                ...validateResponse.parsedError,
+                                line: shownLine,
+                            },
+                            model,
+                            editorDecorationsCollection:
+                                decorationsCollection.current,
+                        });
+                    }
                 }
 
                 setSqlValidation({
@@ -562,6 +594,9 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
                     {/* LuxDBDiagram: open .dbml files (merged into one schema) or a folder of them. */}
                     {importMethod === 'dbml' ? (
                         <div className="absolute right-0 top-1/2 flex -translate-y-1/2 gap-1">
+                            {onDBMLFolderChange && isGitHubAvailable() ? (
+                                <GitHubRepoButton onOpen={dbmlFolder.open} />
+                            ) : null}
                             <DBMLFolderButton onOpen={dbmlFolder.open} />
                             <DBMLFilesButton
                                 onLoad={(content) => {
@@ -668,6 +703,7 @@ export const ImportDatabase: React.FC<ImportDatabaseProps> = ({
             closeDBMLFolder,
             folderActivePath,
             handleFolderFileChange,
+            onDBMLFolderChange,
         ]
     );
 

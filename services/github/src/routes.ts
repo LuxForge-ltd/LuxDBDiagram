@@ -10,6 +10,7 @@
  *  GET  status         whether GitHub is set up and who is signed in
  *  GET  login          starts the GitHub sign-in (redirect)
  *  GET  callback       finishes it (redirect back into the app)
+ *  GET  signed-in      page the sign-in window ends on; tells the app and closes
  *  POST logout         forgets the sign-in
  *  GET  repos          repositories the App is installed on
  *  GET  branches       a repository's branches (?repo=)
@@ -18,7 +19,7 @@
  *  POST pull-request   opens (or finds) the pull request for a working branch
  */
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { AccessVerifier } from './access.ts';
 import { AccessError, createAccessVerifier } from './access.ts';
 import type { ServiceConfig } from './config.ts';
@@ -97,6 +98,18 @@ const UNEXPIRING_TOKEN_MS = 8 * 60 * 60 * 1000;
 const REFRESH_MARGIN_MS = 60 * 1000;
 const MAX_BODY_BYTES = MAX_TOTAL_BYTES + 1_000_000;
 const SHA = /^[0-9a-f]{40}$/;
+
+/**
+ * The sign-in window's script: tells the app (same origin, any window) that sign-in finished,
+ * then closes. A BroadcastChannel is used because GitHub's pages may cut the window's link to
+ * its opener.
+ */
+const SIGNED_IN_SCRIPT =
+    "try{new BroadcastChannel('luxdbdiag-github').postMessage('signed-in')}catch(e){}" +
+    'setTimeout(function(){window.close()},300);';
+const SIGNED_IN_SCRIPT_HASH = createHash('sha256')
+    .update(SIGNED_IN_SCRIPT)
+    .digest('base64');
 
 const securityHeaders = {
     'Cache-Control': 'no-store',
@@ -550,6 +563,30 @@ export const createHandler = (options: HandlerOptions) => {
                         return;
                     }
                     redirect(signIn.returnTo);
+                    return;
+                }
+                case 'GET signed-in': {
+                    // Where the sign-in window lands: says so, tells the app, and closes.
+                    const session = isGitHubReady(config)
+                        ? await loadSession()
+                        : null;
+                    const message = session
+                        ? `Signed in to GitHub as ${session.login}. You can close this window.`
+                        : 'Not signed in to GitHub. You can close this window and try again.';
+                    send(
+                        200,
+                        {
+                            'Content-Type': 'text/html; charset=utf-8',
+                            'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-${SIGNED_IN_SCRIPT_HASH}'`,
+                        },
+                        `<!doctype html><meta charset="utf-8"><title>LuxDBDiag and GitHub</title>` +
+                            `<body style="font-family:system-ui;max-width:36rem;margin:4rem auto;padding:0 1rem">` +
+                            `<p>${escapeHtml(message)}</p>` +
+                            (session
+                                ? `<script>${SIGNED_IN_SCRIPT}</script>`
+                                : '') +
+                            `</body>`
+                    );
                     return;
                 }
                 case 'POST logout': {

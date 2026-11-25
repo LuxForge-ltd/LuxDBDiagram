@@ -8,6 +8,7 @@
  * Operational role: used by the DBML import dialog's "Open folder…" button.
  */
 import { isDBMLPath } from './dbml-folder';
+import type { RepoFolderLink } from '@/lib/github/repo-source';
 
 /** Minimal File System Access API types (not all TypeScript DOM libs include them). */
 export interface FolderFileHandle {
@@ -34,6 +35,8 @@ export interface OpenedFolder {
     files: { path: string; content: string }[];
     /** Present when the browser gave a folder handle (Edge and Chrome). */
     handle?: FolderDirectoryHandle;
+    /** Present when the folder came from a GitHub repository. */
+    repo?: RepoFolderLink;
 }
 
 /** Folders below this depth are not searched. */
