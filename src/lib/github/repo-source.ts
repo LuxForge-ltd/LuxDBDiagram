@@ -39,7 +39,42 @@ export interface RepoSource extends Omit<RepoFolderLink, 'files'> {
     linkedAt: number;
     /** The pull request opened from the working branch, once there is one. */
     pullRequestUrl: string | null;
+    /**
+     * What LuxDBDiag wrote for each file when linked or last committed, by path; null for a file
+     * that counts as changed (edited before importing). See `repo-changes.ts`.
+     */
+    generated?: Record<string, string | null>;
+    /** The last commit LuxDBDiag made on the working branch, if any. */
+    lastCommit?: string | null;
+    /** Files LuxDBDiag has committed to the working branch, for the pull request description. */
+    committedFiles?: { path: string; kind: 'changed' | 'new' }[];
 }
+
+/** Working branches the GitHub service may write to start with this. */
+export const WORKING_BRANCH_PREFIX = 'luxdbdiag/';
+
+/** A branch name under the prefix that git (and the service) accept. */
+export const isWorkingBranchName = (
+    value: string,
+    prefix = WORKING_BRANCH_PREFIX
+): boolean => {
+    if (!value.startsWith(prefix) || value.length <= prefix.length) {
+        return false;
+    }
+    if (value.length > 200 || /[\s~^:?*[\\]/.test(value)) return false;
+    if (value.includes('..') || value.includes('@{') || value.includes('//')) {
+        return false;
+    }
+    if (value.endsWith('/') || value.endsWith('.')) return false;
+    return value
+        .split('/')
+        .every(
+            (part) =>
+                part.length > 0 &&
+                !part.startsWith('.') &&
+                !part.endsWith('.lock')
+        );
+};
 
 /** Lower-case letters, digits and single hyphens. */
 const slug = (value: string): string =>
@@ -103,7 +138,8 @@ export const toRepoSource = (
     diagramId: string,
     link: RepoFolderLink,
     selectedPaths: string[],
-    now: number
+    now: number,
+    generated?: Record<string, string | null>
 ): RepoSource => ({
     ...link,
     diagramId,
@@ -113,4 +149,5 @@ export const toRepoSource = (
     })),
     linkedAt: now,
     pullRequestUrl: null,
+    ...(generated ? { generated } : {}),
 });

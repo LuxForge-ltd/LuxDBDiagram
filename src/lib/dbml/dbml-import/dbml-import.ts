@@ -616,7 +616,15 @@ const importStandardDBMLToDiagram = async (
                                 const rawDefault = String(
                                     field.dbdefault.value
                                 );
-                                defaultValue = rawDefault.replace(/['"`]/g, '');
+                                // LuxDBDiagram: an expression default (`...`) is SQL, whose
+                                // single quotes are string literals (`now() + interval '5 days'`);
+                                // without them the schema cannot be exported. Keep those.
+                                defaultValue = rawDefault.replace(
+                                    field.dbdefault.type === 'expression'
+                                        ? /["`]/g
+                                        : /['"`]/g,
+                                    ''
+                                );
                             }
 
                             // Check if this field should be an array

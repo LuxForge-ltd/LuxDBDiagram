@@ -1580,7 +1580,12 @@ export function generateDBMLFromDiagram(diagram: Diagram): DBMLExportResult {
             baseScript // Log the SQL that caused the error
         );
 
-        errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        // LuxDBDiagram: @dbml/core throws { diags: [...] }, not an Error; name its first problem.
+        errorMsg =
+            error instanceof Error
+                ? error.message
+                : ((error as { diags?: { message?: string }[] } | null)
+                      ?.diags?.[0]?.message ?? 'Unknown error');
         const errorMessage = `// Error generating DBML: ${errorMsg}`;
         standard = errorMessage;
         inline = errorMessage;
