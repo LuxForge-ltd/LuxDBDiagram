@@ -59,7 +59,9 @@ including ChartDB's original pink. The choice is saved in your browser.
 
 ## Running and testing locally
 
-Requires Node.js 24 (see `.nvmrc`). No database or backend is needed.
+Requires Node.js 24 (see `.nvmrc`). No database or backend is needed. The optional GitHub service
+in `services/github/`, which lets the hosted copy open and commit to GitHub repositories, is only
+needed for that.
 
 ```bash
 npm ci            # install the exact dependency versions
@@ -77,7 +79,8 @@ LUXDB_GAP_SCHEMA_DIR="/path/to/Grassroots Admin Portal/docs/architecture/schema"
 
 To build the Docker image, run `docker build -t luxdbdiagram .`. The image turns off ChartDB's
 analytics and ChartDB Cloud prompts by default. Never pass an OpenAI key to the build: the app would
-hand it to every visitor.
+hand it to every visitor. The GitHub service has its own image:
+`docker build -t luxdbdiagram-github -f services/github/Dockerfile services/github`.
 
 ## Working on it
 
