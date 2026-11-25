@@ -10,7 +10,7 @@ visitor's own browser (IndexedDB). There is no backend, database or app secret t
 | Image | `ghcr.io/luxforge-ltd/luxdbdiagram:<version>`, built on joyeuse, private (see below) |
 | Platform | OpenRail on `openrail-trial` (VM 105, `10.10.180.5`), a Reserved deployment target in the Pillars Devices standard |
 | OpenRail project | `luxdbdiagram`, environment `production` |
-| App service | `web`: the image above, port 80, private name `web.internal`, pulled with the registry credential `GHCR` |
+| App service | `web`: the image above (set by digest, see "Update to a new version"), port 80, private name `web.internal`, pulled with the registry credential `GHCR`, memory reservation 64 MB |
 | Connector service | `cloudflared`: image `cloudflare/cloudflared:2026.11.2`, start command `tunnel --no-autoupdate run`, `TUNNEL_TOKEN` sealed in by `luxhome-cf-publish` |
 | Cloudflare | tunnel `luxdbdiagram`, route `luxdbdiagram.luxforge.dev` to `http://web.internal:80`, Access app with the shared policy `admin-only-access` |
 | Internet name | `https://luxdbdiagram.luxforge.dev`, behind Cloudflare Access |
@@ -64,7 +64,13 @@ mkdir -p ~/deploy/luxdbdiagram && cd ~/deploy/luxdbdiagram
 5050 add --image ghcr.io/luxforge-ltd/luxdbdiagram:<version> -y
 5050 service rename web -s luxdbdiagram -y
 5050 environment edit --service-config web source.registryCredential <id of the GHCR credential> -y
+5050 environment edit --service-config web deploy.memoryReservationMb 64 -y
 ```
+
+OpenRail sets aside 256 MB on the host for each replica unless `deploy.memoryReservationMb` (or a
+memory limit) says otherwise, and during an update the old and new replicas run side by side. nginx
+serving the app uses about 5 MB, so `web` reserves 64 MB; with the default, an update can wait with
+"Pending: no capacity" on a host whose memory is mostly reserved but unused.
 
 A service uses a registry credential only when its `source.registryCredential` names the
 credential's id (Settings > Registry credentials, or `GET /api/v1/registry-credentials`); OpenRail
@@ -100,12 +106,22 @@ until the cache expires. Run `check` again after that.
 
 ## Update to a new version
 
-Build and push the new tag on joyeuse, then on the VM:
+Build and push the new tag on joyeuse; `docker push` ends by printing the image's digest. Then on
+the VM, set the image by that digest, so the service names exactly the build that runs:
 
 ```bash
 cd ~/deploy/luxdbdiagram
-5050 environment edit --service-config web source.image ghcr.io/luxforge-ltd/luxdbdiagram:<version> -y
+5050 environment edit --service-config web source.image ghcr.io/luxforge-ltd/luxdbdiagram@sha256:<digest> -y
+5050 service list
 ```
+
+Wait until `web` is `online` before changing anything else on the service. While a deployment is
+still pending, a change to other settings (for example `deploy.*`) starts a new deployment that
+reuses the active deployment's image, so the old version comes back although the service shows the
+new image. If that happens, set `source.image` again to a different reference to the same build
+(the digest form instead of the tag, or the other way round): a change of image makes OpenRail fetch
+it again. Check what runs from inside the project (see Check above): the page title is
+"LuxForge Database Diagrams built on ChartDB".
 
 The tunnel, Access and DNS do not change.
 
