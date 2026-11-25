@@ -155,6 +155,33 @@ export const luxdbStrings = {
             areas_file: 'Areas and layout',
             unassigned_file: 'Tables in no Area',
         },
+        github: {
+            open_repository: 'Open repository…',
+            open_repository_title:
+                'Open a folder of .dbml files from a GitHub repository. Each ticked file becomes an Area; changes can later be saved back to a working branch with a pull request.',
+            checking: 'Checking GitHub…',
+            unavailable: 'The GitHub service is not available.',
+            not_configured: 'GitHub sign-in is not set up on this server yet.',
+            missing: 'Missing settings: {{settings}}',
+            sign_in_hint:
+                'Sign in with GitHub to open repositories the LuxDBDiag GitHub App is installed on.',
+            sign_in: 'Sign in with GitHub',
+            signing_in: 'Waiting for the GitHub sign-in window…',
+            signed_in_as: 'Signed in to GitHub as {{login}}',
+            sign_out: 'Sign out',
+            no_repositories:
+                'The LuxDBDiag GitHub App is not installed on any repository you can open.',
+            repository: 'Repository',
+            choose_repository: 'Choose a repository',
+            read_only:
+                'You can read this repository but not push to it, so changes cannot be saved back.',
+            install_more: 'Install the App on more repositories',
+            branch: 'Branch',
+            folder: 'Folder (blank for the whole repository)',
+            open: 'Open folder',
+            folder_empty:
+                'No .dbml files in that folder (subfolders up to four deep are searched).',
+        },
         settings: {
             settings: 'Settings',
             accent_colour: 'Accent colour',

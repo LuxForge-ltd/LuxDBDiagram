@@ -189,6 +189,21 @@ describe('GitHub service routes', () => {
         expect((await call(`callback?code=x&state=${state}`)).status).toBe(400);
     });
 
+    it('ends the sign-in window on a page that tells the app and closes', async () => {
+        const session = await signIn();
+        const done = await call('signed-in', { cookie: session });
+        expect(done.status).toBe(200);
+        const csp = done.headers.get('content-security-policy') ?? '';
+        expect(csp).toMatch(/script-src 'sha256-[A-Za-z0-9+/=]+'/);
+        const html = await done.text();
+        expect(html).toContain('Signed in to GitHub as tester');
+        expect(html).toContain("new BroadcastChannel('luxdbdiag-github')");
+
+        const signedOut = await (await call('signed-in')).text();
+        expect(signedOut).toContain('Not signed in');
+        expect(signedOut).not.toContain('<script>');
+    });
+
     it('does not let another Access user use the sign-in cookie', async () => {
         const session = await signIn('ben');
         const status = (await (

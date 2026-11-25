@@ -16,6 +16,7 @@ import type {
     FolderDirectoryHandle,
     OpenedFolder,
 } from '@/lib/areas/folder-access';
+import type { RepoFolderLink } from '@/lib/github/repo-source';
 
 export interface DBMLFolderState {
     name: string;
@@ -23,6 +24,8 @@ export interface DBMLFolderState {
     /** File shown in the editor; null shows the combined import (read-only). */
     activePath: string | null;
     handle?: FolderDirectoryHandle;
+    /** The repository folder the files came from, with the files as GitHub has them. */
+    repo?: RepoFolderLink;
 }
 
 export const useDBMLFolder = () => {
@@ -45,6 +48,7 @@ export const useDBMLFolder = () => {
             files,
             activePath: files.find((file) => file.selected)?.path ?? null,
             handle: opened.handle,
+            repo: opened.repo,
         });
     }, []);
 

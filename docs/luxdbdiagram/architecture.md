@@ -168,8 +168,25 @@ The app itself stays frontend-only. Where it is deployed with the optional GitHu
   branch the files were read from. If a file changed on GitHub since the app read it, the commit stops and
   names the files (409). Files whose text did not change are not committed. Writes need the
   `X-LuxDBDiag: 1` header and a same-origin `Origin`.
-- **In the app.** Opening a repository folder (**Open repository…** in DBML import) and saving changed
-  files with a diff and a pull request (**Save to repository…**) come in the next two phases.
+- **Opening a repository folder.** When `/config.js` reports `GITHUB_REPOS: "true"`, the new-diagram
+  DBML import offers **Open repository…** beside **Open folder…**
+  (`src/dialogs/common/import-database/github-repo/`).
+  - It signs in to GitHub in its own window. If pop-ups are blocked, it signs in in the same tab and
+    returns there.
+  - It lists the repositories the App is installed on and suggests `Dev` when the repository has one.
+  - It remembers the last repository and each repository's folder.
+  - The folder's files open in the same panel as **Open folder…**, so ticking, editing and the
+    combined import work as above.
+- **The diagram's link.** Creating the diagram stores its link in this browser
+  (`src/lib/github/repo-source.ts`, IndexedDB database `LuxDBDiag`, separate from ChartDB's). The link
+  holds the repository, the branch read from, the folder and the commit. It also holds each file as
+  GitHub had it (text and SHA) and whether it was imported, so later saves can tell what changed.
+  - Commits go to a working branch named after the folder, for example `luxdbdiag/schema-k3x9q2`.
+  - Pull requests target the branch read from. If that was itself a working branch, they target `Dev`
+    (or the default branch).
+  - The diagram is named after the repository and folder, for example "Grassroots-Admin-Portal
+    schema".
+- **Saving back.** **Save to repository…**, with a diff and the pull request, comes in the next phase.
 
 ### Export
 
