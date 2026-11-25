@@ -186,7 +186,27 @@ The app itself stays frontend-only. Where it is deployed with the optional GitHu
     (or the default branch).
   - The diagram is named after the repository and folder, for example "Grassroots-Admin-Portal
     schema".
-- **Saving back.** **Save to repository…**, with a diff and the pull request, comes in the next phase.
+- **Saving back.** A linked diagram's **Actions** menu offers **Save to repository…**
+  (`src/dialogs/save-to-repository-dialog/`, `src/lib/github/repo-changes.ts`):
+  - **What changed.** LuxDBDiag writes the diagram's files as **Export as → LuxDBDiag files** does.
+    When the diagram is linked, and after each commit, it keeps that text for each file as a baseline.
+    A file is changed when LuxDBDiag would now write something different. Files edited in the import
+    editor count as changed from the start.
+  - **Fixed order.** Tables, relationships and custom types are put in a fixed order first. ChartDB's
+    storage returns them ordered by their random ids, so without this every file of a reopened
+    diagram would look changed.
+  - **The list.** Changed files are ticked. New files for new Areas, and `unassigned.dbml`, are ticked
+    too. The Areas file `luxdbdiag.areas.dbml` is new and unticked unless the folder already has it.
+    Unchanged files are counted and never written. Files of deleted Areas are listed, not deleted.
+    Files that were not imported (combined copies) are named as possibly out of date.
+  - **The diff.** Each file is shown side by side with GitHub's copy (Monaco diff).
+  - **The commit.** The working branch (editable, must start `luxdbdiag/`) and the commit message
+    (it follows the ticked files until edited) go into one commit of the ticked files. A file changed
+    on GitHub since it was read stops the commit and is named.
+  - **The pull request.** After a commit, **Open pull request into `<base>`** opens it (or finds the
+    open one) and remembers its link. Its description lists the files LuxDBDiag committed.
+  - **Limits.** Changed files are rewritten by the DBML exporter, so their `//` comments are lost and
+    their tables come out in name order.
 
 ### Export
 

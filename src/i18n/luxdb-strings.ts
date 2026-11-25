@@ -181,6 +181,52 @@ export const luxdbStrings = {
             open: 'Open folder',
             folder_empty:
                 'No .dbml files in that folder (subfolders up to four deep are searched).',
+            save: {
+                menu: 'Save to repository…',
+                title: 'Save to repository',
+                description:
+                    'Changed files of {{repo}} ({{folder}}) are committed to a working branch, for a pull request into {{base}}. Unchanged files are left exactly as they are.',
+                analysis_failed: 'The files could not be worked out: {{error}}',
+                nothing_to_save:
+                    "Nothing to save: the diagram's files match the repository.",
+                include: 'Commit {{file}}',
+                new: 'new',
+                changed: 'changed',
+                unchanged_one: '{{count}} unchanged file is left as it is.',
+                unchanged_other:
+                    '{{count}} unchanged files are left as they are.',
+                removed:
+                    'No Area writes {{files}} any more. It is not deleted from the repository.',
+                untouched:
+                    'Not updated, because they were not imported (such as combined copies): {{files}}. They may now be out of date.',
+                diff_new: 'New file',
+                diff_github: 'On GitHub ({{branch}})',
+                diff_mine: 'From this diagram',
+                branch: 'Working branch',
+                branch_invalid:
+                    'Use a branch name starting {{prefix}}, with no spaces.',
+                message: 'Commit message',
+                exporter_note:
+                    'Changed files are rewritten by the DBML exporter: // comments in them are not kept, and inline ref: settings become Ref lines.',
+                committed_one: 'Committed {{count}} file to {{branch}}.',
+                committed_other: 'Committed {{count}} files to {{branch}}.',
+                already_there:
+                    'GitHub already has these files on {{branch}}; nothing was committed.',
+                conflict_one:
+                    'Not committed: {{files}} changed on GitHub since this diagram read it. Open the repository again from {{branch}}, or from the branch it came from, to pick up that change.',
+                conflict_other:
+                    'Not committed: {{files}} changed on GitHub since this diagram read them. Open the repository again from {{branch}}, or from the branch it came from, to pick up those changes.',
+                branch_moved:
+                    'Not committed: {{branch}} moved on GitHub meanwhile. Try again.',
+                signed_out: 'Sign in to GitHub to save.',
+                view_pull_request: 'View the pull request',
+                open_pull_request: 'Open pull request into {{base}}',
+                pull_request_title:
+                    'Schema changes from LuxDBDiag ({{folder}})',
+                close: 'Close',
+                commit_one: 'Commit {{count}} file',
+                commit_other: 'Commit {{count}} files',
+            },
         },
         settings: {
             settings: 'Settings',

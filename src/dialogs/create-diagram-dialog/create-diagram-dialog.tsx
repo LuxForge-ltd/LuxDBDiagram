@@ -30,6 +30,7 @@ import type { ImportMethod } from '@/lib/import-method/import-method';
 import type { DBMLFolderState } from '../common/import-database/dbml-folder/use-dbml-folder';
 import { repoDiagramName, toRepoSource } from '@/lib/github/repo-source';
 import { saveRepoSource } from '@/lib/github/repo-source-store';
+import { repoBaseline } from '@/lib/github/repo-changes';
 
 export interface CreateDiagramDialogProps extends BaseDialogProps {}
 
@@ -141,14 +142,26 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
             await addDiagram({ diagram });
             // LuxDBDiagram: remember the repository folder, so changes can be saved back.
             if (importMethod === 'dbml' && dbmlFolder?.repo) {
+                const imported = dbmlFolder.files.filter(
+                    (file) => file.selected
+                );
+                let generated: Record<string, string | null> | undefined;
+                try {
+                    generated = repoBaseline(
+                        diagram,
+                        imported,
+                        dbmlFolder.repo.files
+                    );
+                } catch {
+                    // Without a baseline, saving compares with GitHub's text instead.
+                }
                 await saveRepoSource(
                     toRepoSource(
                         diagram.id,
                         dbmlFolder.repo,
-                        dbmlFolder.files
-                            .filter((file) => file.selected)
-                            .map((file) => file.path),
-                        Date.now()
+                        imported.map((file) => file.path),
+                        Date.now(),
+                        generated
                     )
                 );
             }

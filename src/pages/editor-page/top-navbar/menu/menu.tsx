@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
     Menubar,
     MenubarCheckboxItem,
@@ -18,6 +18,8 @@ import { useExportImage } from '@/hooks/use-export-image';
 import { useDBMLFileExport } from '@/hooks/use-dbml-file-export';
 import { SettingsMenu } from './settings-menu';
 import { useSaveAreaFiles } from '@/hooks/use-save-area-files';
+import { useRepositoryLink } from '@/hooks/use-repository-link';
+import { SaveToRepositoryDialog } from '@/dialogs/save-to-repository-dialog/save-to-repository-dialog';
 import { databaseTypeToLabelMap } from '@/lib/databases';
 import { DatabaseType } from '@/lib/domain/database-type';
 import {
@@ -70,6 +72,9 @@ export const Menu: React.FC<MenuProps> = () => {
     const { exportImage } = useExportImage();
     const exportDBMLFile = useDBMLFileExport();
     const saveAreaFiles = useSaveAreaFiles();
+    // LuxDBDiagram: a diagram opened from a GitHub repository can save its changes back.
+    const repositoryLink = useRepositoryLink();
+    const [saveToRepositoryOpen, setSaveToRepositoryOpen] = useState(false);
     const navigate = useNavigate();
 
     const handleDeleteDiagramAction = useCallback(() => {
@@ -180,6 +185,13 @@ export const Menu: React.FC<MenuProps> = () => {
                             }
                         </MenubarShortcut>
                     </MenubarItem>
+                    {repositoryLink.source ? (
+                        <MenubarItem
+                            onClick={() => setSaveToRepositoryOpen(true)}
+                        >
+                            {t('luxdb.github.save.menu')}
+                        </MenubarItem>
+                    ) : null}
                     <MenubarSeparator />
                     <MenubarSub>
                         <MenubarSubTrigger>
@@ -515,6 +527,15 @@ export const Menu: React.FC<MenuProps> = () => {
                     </MenubarItem>
                 </MenubarContent>
             </MenubarMenu>
+
+            {repositoryLink.source ? (
+                <SaveToRepositoryDialog
+                    open={saveToRepositoryOpen}
+                    onOpenChange={setSaveToRepositoryOpen}
+                    source={repositoryLink.source}
+                    onSourceChange={repositoryLink.update}
+                />
+            ) : null}
         </Menubar>
     );
 };
