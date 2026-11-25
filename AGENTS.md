@@ -31,9 +31,11 @@ Canonical policy: https://github.com/LuxForge-ltd/pillars/blob/main/standards/ai
 
 LuxDBDiagram is a fork of ChartDB (`upstream`: https://github.com/chartdb/chartdb), kept for producing
 LuxForge's own database schemas. In the app it is named LuxDBDiag (short), LuxForge DB diagrams (medium)
-and LuxForge Database Diagrams built on ChartDB (full title); the names live in `src/lib/brand.ts`. It is a frontend-only
-React, TypeScript and Vite application; it needs no backend or database connection. Design and the
-enhanced DBML format are described in `docs/luxdbdiagram/architecture.md`.
+and LuxForge Database Diagrams built on ChartDB (full title); the names live in `src/lib/brand.ts`. The app is a
+frontend-only React, TypeScript and Vite application and needs no database connection. An optional
+service in `services/github/` signs in to GitHub and reads and commits DBML files for it where it is
+deployed; without that service the app works as before. Design and the enhanced DBML format are
+described in `docs/luxdbdiagram/architecture.md`.
 
 - **Extend, don't rewrite.** Reuse ChartDB's editor, DBML pipeline, canvas and storage. Keep LuxDBDiagram
   logic in its own modules (`src/lib/areas/`, `src/context/area-view-context/`, the Areas canvas and
@@ -43,6 +45,9 @@ enhanced DBML format are described in `docs/luxdbdiagram/architecture.md`.
   one definition of each table. When a diagram is saved as files, each Area's file holds a copy of the
   definitions of the tables that Area shows (a table in two Areas is written in both files), and opening
   the files merges identical copies back into the one table.
+- **GitHub service.** Keep `services/github/` small and free of npm dependencies. It writes only `.dbml`
+  files, only to working branches starting `luxdbdiag/`, and never to `Dev`, `main` or `master`;
+  changes reach those branches through pull requests.
 - **Licence.** Keep the AGPL-3.0 `LICENSE` and ChartDB attribution.
 - **Checks before every pull request** (run on an allowed device, joyeuse first):
   - `npm run lint`

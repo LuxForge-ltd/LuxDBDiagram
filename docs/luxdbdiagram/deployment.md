@@ -12,6 +12,7 @@ visitor's own browser (IndexedDB). There is no backend, database or app secret t
 | OpenRail project | `luxdbdiagram`, environment `production` |
 | App service | `web`: the image above (set by digest, see "Update to a new version"), port 80, private name `web.internal`, pulled with the registry credential `GHCR`, memory reservation 64 MB |
 | Connector service | `cloudflared`: image `cloudflare/cloudflared:2026.11.2`, start command `tunnel --no-autoupdate run`, `TUNNEL_TOKEN` sealed in by `luxhome-cf-publish` |
+| GitHub service (optional) | `github`: image `ghcr.io/luxforge-ltd/luxdbdiagram-github:<version>`, port 8080, private name `github.internal`; `web` reaches it through `GITHUB_PROXY_URL` (see "GitHub service" below) |
 | Cloudflare | tunnel `luxdbdiagram`, route `luxdbdiagram.luxforge.dev` to `http://web.internal:80`, Access app with the shared policy `admin-only-access` |
 | Internet name | `https://luxdbdiagram.luxforge.dev`, behind Cloudflare Access |
 | LAN name | `luxdbdiagram.home.luxforge.dev` is not set up: it would be LuxHome internal DNS and proxy work |
@@ -124,6 +125,82 @@ it again. Check what runs from inside the project (see Check above): the page ti
 "LuxForge Database Diagrams built on ChartDB".
 
 The tunnel, Access and DNS do not change.
+
+## GitHub service (optional)
+
+The `github` service lets the app open a folder of a GitHub repository and commit changed DBML files
+to a working branch (see "A GitHub repository" in [architecture.md](architecture.md)). It runs in the
+same OpenRail project and is reached only through `web`'s nginx at `/api/github/`, so it sits behind
+the same Cloudflare Access app with no route, DNS name or tunnel change.
+
+### The GitHub App (operator)
+
+Create it under the organisation: <https://github.com/organizations/LuxForge-ltd/settings/apps/new>.
+
+| Setting | Value |
+| --- | --- |
+| GitHub App name | for example `LuxDBDiag LuxForge` (must be unique on GitHub) |
+| Homepage URL | `https://luxdbdiagram.luxforge.dev` |
+| Callback URL | `https://luxdbdiagram.luxforge.dev/api/github/callback` |
+| Expire user authorization tokens | on |
+| Request user authorization (OAuth) during installation | off |
+| Enable Device Flow | off |
+| Webhook | Active off |
+| Repository permissions | Contents: Read and write; Pull requests: Read and write; Metadata: Read-only (set automatically) |
+| Organization and account permissions | none |
+| Where can this GitHub App be installed? | Only on this account |
+
+Then generate a client secret (no private key is needed), install the App on the repositories the
+app may open (for example `Grassroots-Admin-Portal`), and note the App's client ID and URL name
+(the part after `github.com/apps/`). Copy the Access application's audience (AUD) tag from Cloudflare
+Zero Trust, Access, Applications, `luxdbdiagram`. It is not secret.
+
+### Build and add the service
+
+On joyeuse:
+
+```powershell
+docker build -t ghcr.io/luxforge-ltd/luxdbdiagram-github:<version> -f services/github/Dockerfile services/github
+docker push ghcr.io/luxforge-ltd/luxdbdiagram-github:<version>
+```
+
+On the VM (`cd ~/deploy/luxdbdiagram`):
+
+```bash
+5050 add --image ghcr.io/luxforge-ltd/luxdbdiagram-github@sha256:<digest> -y
+5050 service rename github -s luxdbdiagram-github -y
+5050 environment edit --service-config github source.registryCredential <id of the GHCR credential> -y
+5050 environment edit --service-config github deploy.memoryReservationMb 96 -y
+5050 environment edit --service-config github deploy.healthcheckPath /api/github/health -y
+5050 variables set -s github PUBLIC_URL=https://luxdbdiagram.luxforge.dev \
+  ACCESS_TEAM_DOMAIN=<team>.cloudflareaccess.com ACCESS_AUD=<AUD tag> \
+  GITHUB_CLIENT_ID=<client ID> GITHUB_APP_SLUG=<App URL name> -y
+head -c 32 /dev/urandom | base64 | 5050 variables set -s github SESSION_KEY --stdin -y
+5050 variables set -s web GITHUB_PROXY_URL=http://github.internal:8080 -y
+```
+
+The operator sets the client secret themselves, from standard input so it never appears in shell
+history: `5050 variables set -s github GITHUB_CLIENT_SECRET --stdin -y`, then paste it and press
+Ctrl+D. `SESSION_KEY` is generated on the VM and never shown; changing it signs everyone out of
+GitHub. Wait for each service to be `online` before the next change (see "Update to a new version").
+
+Until every setting is present the service runs and `/api/github/status` lists what is missing.
+`ALLOW_WITHOUT_ACCESS=true` switches the Access check off and is for local development only.
+
+### Check the GitHub service
+
+- Inside the project: `wget -qO- http://github.internal:8080/api/github/health` from the `web`
+  container answers `{"ok":true}`; `wget -qO- http://web.internal/config.js` shows
+  `GITHUB_REPOS: "true"`.
+- Without an Access token the service refuses everything but `health`:
+  `wget -qO- http://github.internal:8080/api/github/status` answers 403.
+- Signed in through Access: `https://luxdbdiagram.luxforge.dev/api/github/status` shows
+  `"configured":true`.
+
+### Remove the GitHub service
+
+Delete the `web` variable `GITHUB_PROXY_URL` (the app hides its GitHub features), delete the
+`github` service, and uninstall or delete the GitHub App.
 
 ## Remove
 

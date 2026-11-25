@@ -143,6 +143,34 @@ use their folder picker; other browsers use a folder upload.
   are written as `Ref` lines. Editing a single file and applying it to the diagram is not supported yet:
   edit the whole schema or the canvas.
 
+### A GitHub repository (optional service)
+
+The app itself stays frontend-only. Where it is deployed with the optional GitHub service
+(`services/github/`), a diagram's files can also be read from, and committed to, a GitHub repository.
+
+- **The service.** A small Node service with no npm dependencies, reached through the app's own nginx at
+  `/api/github/`. nginx forwards to it only when `GITHUB_PROXY_URL` is set, and `/config.js` then reports
+  `GITHUB_REPOS: "true"`. Without it `/api/github/` answers 404 and the app works as before.
+- **Who may use it.** Every route except `/api/github/health` first verifies the Cloudflare Access token
+  (`Cf-Access-Jwt-Assertion`): the team's signature, this application's audience, in date, and a person's
+  email. A request that reaches the service without going through Access is refused.
+- **GitHub sign-in.** A GitHub App's user sign-in. The token acts as the signed-in person, but only on
+  repositories where the App is installed and only with the App's permissions (Contents and Pull
+  requests). Tokens are kept, encrypted (AES-256-GCM), in an HttpOnly cookie bound to the person's Access
+  email, so the service holds no state and the page's JavaScript never sees a token. Expired tokens are
+  renewed with the refresh token.
+- **What it can do.** It lists the repositories the App is installed on and their branches, and reads the
+  `.dbml` files of a folder (by the folder reader's rules: at most four folders deep, not in dot folders,
+  `node_modules`, `dist` or `build`). It commits changed files to a working branch, and opens or finds the
+  pull request from that branch.
+- **Writes are narrow.** The service commits only to branches starting `luxdbdiag/`, only `.dbml` files
+  inside the opened folder, and only by fast-forward. A new working branch starts from the head of the
+  branch the files were read from. If a file changed on GitHub since the app read it, the commit stops and
+  names the files (409). Files whose text did not change are not committed. Writes need the
+  `X-LuxDBDiag: 1` header and a same-origin `Origin`.
+- **In the app.** Opening a repository folder (**Open repository…** in DBML import) and saving changed
+  files with a diff and a pull request (**Save to repository…**) come in the next two phases.
+
 ### Export
 
 **Actions → Export as** offers:
