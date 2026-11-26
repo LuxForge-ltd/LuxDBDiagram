@@ -204,7 +204,11 @@ export const exportBaseSQL = ({
     const nonViewTables = tables.filter((table) => !table.isView);
 
     // Align the data types based on foreign key relationships
-    alignForeignKeyDataTypes(diagram);
+    // LuxDBDiagram: not when writing DBML, which keeps each column's type as the diagram has it
+    // (the alignment also changes the diagram it is given).
+    if (!isDBMLFlow) {
+        alignForeignKeyDataTypes(diagram);
+    }
 
     // Initialize the SQL script string
     let sqlScript = '';
