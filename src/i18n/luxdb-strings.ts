@@ -192,6 +192,11 @@ export const luxdbStrings = {
                 include: 'Commit {{file}}',
                 new: 'new',
                 changed: 'changed',
+                rewritten: 'rewritten',
+                rewritten_warning_one:
+                    'This file cannot be edited in place ({{reason}}), so it would be rewritten whole by the DBML exporter, and its {{count}} line with a comment would be lost. It is left unticked; tick it only if that is what you want.',
+                rewritten_warning_other:
+                    'This file cannot be edited in place ({{reason}}), so it would be rewritten whole by the DBML exporter, and its {{count}} lines with comments would be lost. It is left unticked; tick it only if that is what you want.',
                 unchanged_one: '{{count}} unchanged file is left as it is.',
                 unchanged_other:
                     '{{count}} unchanged files are left as they are.',
@@ -207,7 +212,7 @@ export const luxdbStrings = {
                     'Use a branch name starting {{prefix}}, with no spaces.',
                 message: 'Commit message',
                 exporter_note:
-                    'Changed files are rewritten by the DBML exporter: // comments in them are not kept, and inline ref: settings become Ref lines.',
+                    "Changed files are edited in place: only the tables, columns and relationships that changed in the diagram are changed, so comments and the rest of each file are kept. New tables and relationships go at the end of the file. A changed column's line is written as the exporter writes it.",
                 committed_one: 'Committed {{count}} file to {{branch}}.',
                 committed_other: 'Committed {{count}} files to {{branch}}.',
                 already_there:

@@ -53,8 +53,9 @@ import {
     afterCommit,
     defaultCommitMessage,
     pullRequestBody,
-    repoChanges,
+    type RepoChanges,
 } from '@/lib/github/repo-changes';
+import { analyzeRepoChanges } from '@/lib/github/repo-in-place';
 import {
     WORKING_BRANCH_PREFIX,
     isWorkingBranchName,
@@ -88,9 +89,7 @@ export const SaveToRepositoryDialog: React.FC<SaveToRepositoryDialogProps> = ({
     const { currentDiagram } = useChartDB();
     const { effectiveTheme } = useTheme();
 
-    const [analysis, setAnalysis] = useState<ReturnType<
-        typeof repoChanges
-    > | null>(null);
+    const [analysis, setAnalysis] = useState<RepoChanges | null>(null);
     const [analysisError, setAnalysisError] = useState<string | null>(null);
     const [selected, setSelected] = useState<Record<string, boolean>>({});
     const [activePath, setActivePath] = useState<string | null>(null);
@@ -112,30 +111,37 @@ export const SaveToRepositoryDialog: React.FC<SaveToRepositoryDialogProps> = ({
         setSignedOut(false);
         setMessageEdited(false);
         setBranch(source.workingBranch);
-        try {
-            const result = repoChanges(currentDiagram, source);
-            setAnalysis(result);
-            setAnalysisError(null);
-            setSelected(
-                Object.fromEntries(
-                    result.changes.map((change) => [
-                        change.path,
-                        change.selected,
-                    ])
-                )
-            );
-            setActivePath(result.changes[0]?.path ?? null);
-            setMessage(
-                defaultCommitMessage(
-                    result.changes.filter((change) => change.selected)
-                )
-            );
-        } catch (caught) {
-            setAnalysis(null);
-            setAnalysisError(
-                caught instanceof Error ? caught.message : String(caught)
-            );
-        }
+        setAnalysis(null);
+        setAnalysisError(null);
+        let cancelled = false;
+        analyzeRepoChanges(currentDiagram, source)
+            .then((result) => {
+                if (cancelled) return;
+                setAnalysis(result);
+                setSelected(
+                    Object.fromEntries(
+                        result.changes.map((change) => [
+                            change.path,
+                            change.selected,
+                        ])
+                    )
+                );
+                setActivePath(result.changes[0]?.path ?? null);
+                setMessage(
+                    defaultCommitMessage(
+                        result.changes.filter((change) => change.selected)
+                    )
+                );
+            })
+            .catch((caught: unknown) => {
+                if (cancelled) return;
+                setAnalysisError(
+                    caught instanceof Error ? caught.message : String(caught)
+                );
+            });
+        return () => {
+            cancelled = true;
+        };
         // Only when the dialog opens: the diagram does not change while it is open.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
@@ -208,6 +214,7 @@ export const SaveToRepositoryDialog: React.FC<SaveToRepositoryDialogProps> = ({
                     content: change.after,
                     sha: shas.get(change.path) ?? change.expectedSha ?? '',
                     kind: change.kind,
+                    rewritten: change.method === 'rewritten',
                 })),
                 result
             );
@@ -221,7 +228,7 @@ export const SaveToRepositoryDialog: React.FC<SaveToRepositoryDialogProps> = ({
                           count: ticked.length,
                       }
             );
-            const remaining = repoChanges(currentDiagram, next);
+            const remaining = await analyzeRepoChanges(currentDiagram, next);
             setAnalysis(remaining);
             setActivePath(remaining.changes[0]?.path ?? null);
             setSelected(
@@ -347,12 +354,22 @@ export const SaveToRepositoryDialog: React.FC<SaveToRepositoryDialogProps> = ({
                                         <span className="flex-1 truncate">
                                             {change.path}
                                         </span>
-                                        <span className="shrink-0 text-muted-foreground">
+                                        <span
+                                            className={cn(
+                                                'shrink-0 text-muted-foreground',
+                                                change.method === 'rewritten' &&
+                                                    'text-amber-700 dark:text-amber-400'
+                                            )}
+                                        >
                                             {change.kind === 'new'
                                                 ? t('luxdb.github.save.new')
-                                                : t(
-                                                      'luxdb.github.save.changed'
-                                                  )}
+                                                : change.method === 'rewritten'
+                                                  ? t(
+                                                        'luxdb.github.save.rewritten'
+                                                    )
+                                                  : t(
+                                                        'luxdb.github.save.changed'
+                                                    )}
                                         </span>
                                     </button>
                                 </div>
@@ -386,6 +403,24 @@ export const SaveToRepositoryDialog: React.FC<SaveToRepositoryDialogProps> = ({
                         <div className="flex min-w-0 flex-1 flex-col gap-1">
                             {active ? (
                                 <>
+                                    {active.method === 'rewritten' ? (
+                                        <p
+                                            className="text-amber-700 dark:text-amber-400"
+                                            data-testid="save-to-repository-rewritten"
+                                        >
+                                            {t(
+                                                'luxdb.github.save.rewritten_warning',
+                                                {
+                                                    count:
+                                                        active.lostCommentLines ??
+                                                        0,
+                                                    reason:
+                                                        active.rewriteReason ??
+                                                        '',
+                                                }
+                                            )}
+                                        </p>
+                                    ) : null}
                                     <div className="flex justify-between text-muted-foreground">
                                         <span>
                                             {active.kind === 'new'

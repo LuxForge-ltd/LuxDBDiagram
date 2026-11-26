@@ -186,6 +186,19 @@ const tablesFileContent = (
 };
 
 /**
+ * The DBML LuxDBDiag writes for a set of tables, as in an Area's file: the tables, every
+ * relationship touching them, and the enums.
+ *
+ * @param diagram The diagram.
+ * @param tableIds The tables the file holds.
+ * @throws Error when ChartDB's exporter cannot write the schema.
+ */
+export const tablesFileText = (
+    diagram: Diagram,
+    tableIds: ReadonlySet<string>
+): string => tablesFileContent(diagram, tableIds);
+
+/**
  * Writes a diagram as one DBML file per Area, plus the Area layout file.
  *
  * @param diagram The diagram.

@@ -30,7 +30,7 @@ import type { ImportMethod } from '@/lib/import-method/import-method';
 import type { DBMLFolderState } from '../common/import-database/dbml-folder/use-dbml-folder';
 import { repoDiagramName, toRepoSource } from '@/lib/github/repo-source';
 import { saveRepoSource } from '@/lib/github/repo-source-store';
-import { repoBaseline } from '@/lib/github/repo-changes';
+import { repoBaseline, repoEditedFiles } from '@/lib/github/repo-changes';
 
 export interface CreateDiagramDialogProps extends BaseDialogProps {}
 
@@ -146,8 +146,14 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
                     (file) => file.selected
                 );
                 let generated: Record<string, string | null> | undefined;
+                let editedFiles: ReturnType<typeof repoEditedFiles> | undefined;
                 try {
                     generated = repoBaseline(
+                        diagram,
+                        imported,
+                        dbmlFolder.repo.files
+                    );
+                    editedFiles = repoEditedFiles(
                         diagram,
                         imported,
                         dbmlFolder.repo.files
@@ -161,7 +167,8 @@ export const CreateDiagramDialog: React.FC<CreateDiagramDialogProps> = ({
                         dbmlFolder.repo,
                         imported.map((file) => file.path),
                         Date.now(),
-                        generated
+                        generated,
+                        editedFiles
                     )
                 );
             }

@@ -207,7 +207,7 @@ ${USERS}`
             ),
         ]);
         expect(commentLossWarning(withNote.content)?.message).toMatch(
-            /^1 "\/\/" comment line is not kept/
+            /^1 "\/\/" comment line is not shown in the diagram/
         );
     });
 });

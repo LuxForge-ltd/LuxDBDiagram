@@ -205,8 +205,31 @@ The app itself stays frontend-only. Where it is deployed with the optional GitHu
     on GitHub since it was read stops the commit and is named.
   - **The pull request.** After a commit, **Open pull request into `<base>`** opens it (or finds the
     open one) and remembers its link. Its description lists the files LuxDBDiag committed.
-  - **Limits.** Changed files are rewritten by the DBML exporter, so their `//` comments are lost and
-    their tables come out in name order.
+  - **Editing in place.** A changed file is committed as its own text with only the diagram's
+    changes applied (`src/lib/areas/dbml-in-place.ts`, `src/lib/github/repo-in-place.ts`), so its
+    comments, `Project` block, commented-out drafts, table order and layout are kept. The changes
+    are found by comparing the baseline with what LuxDBDiag writes now, table by table and column
+    by column:
+    - a changed column's line is rewritten as the exporter writes it, keeping the name as written,
+      its inline `ref:` settings that still hold and its trailing comment;
+    - a column that disappears where one with the same definition appears is a rename, rewritten
+      where it is;
+    - new columns go after the column before them, in the table's quoting style; deleted columns'
+      lines are removed; a table note or `indexes` block is replaced, added or removed;
+    - new tables, enums and relationships are added at the end of the file as the exporter writes
+      them; deleted ones are removed from wherever the file has them, inline `ref:` settings
+      included.
+    A file edited in the import editor is edited from its text as imported (kept with the link as
+    `editedFiles` until it is committed).
+  - **Checking.** Before a file is offered, the edited text is imported again (with the tables its
+    relationships point to in other files) and must give the same tables, enums and relationships
+    as LuxDBDiag would write. A file that cannot be edited in place, or does not read back, is
+    rewritten whole by the exporter as before, shown as **rewritten**, left unticked, and the dialog
+    says why and how many lines with comments the rewrite would drop.
+  - **Limits.** A changed column's line uses the exporter's spelling (for example `int` for
+    `integer`). A changed table setting other than its note or indexes, or a change to a part of the
+    file LuxDBDiag does not edit, falls back to the rewrite. **Export as → LuxDBDiag files** still
+    writes whole files.
 
 ### Export
 
@@ -312,7 +335,8 @@ preference, not part of any diagram.
 ## Known limitations inherited from ChartDB
 
 - `//` line comments in DBML have no place in ChartDB's model and are not kept on import. Table and
-  column `note:` values are kept. Import warns when comments will be lost.
+  column `note:` values are kept. Import warns when comments are not shown. **Save to repository**
+  keeps them in the repository's files by editing those files in place (see "Saving back").
 - ChartDB's DBML export leaves out tables with no columns. Export warns when this happens.
 - `TableGroup` blocks are still dropped on import, as in ChartDB.
 - ChartDB imports a composite foreign key (`Ref: a.(x, y) > b.(x, y)`) as its first column pair

@@ -44,10 +44,20 @@ export interface RepoSource extends Omit<RepoFolderLink, 'files'> {
      * that counts as changed (edited before importing). See `repo-changes.ts`.
      */
     generated?: Record<string, string | null>;
+    /**
+     * Files edited in the import editor before importing, until they are committed: the text as
+     * imported and what LuxDBDiag wrote for it then, so saving edits that text in place.
+     */
+    editedFiles?: Record<string, { text: string; generated: string }>;
     /** The last commit LuxDBDiag made on the working branch, if any. */
     lastCommit?: string | null;
     /** Files LuxDBDiag has committed to the working branch, for the pull request description. */
-    committedFiles?: { path: string; kind: 'changed' | 'new' }[];
+    committedFiles?: {
+        path: string;
+        kind: 'changed' | 'new';
+        /** Rewritten whole by the exporter rather than edited in place. */
+        rewritten?: boolean;
+    }[];
 }
 
 /** Working branches the GitHub service may write to start with this. */
@@ -139,7 +149,8 @@ export const toRepoSource = (
     link: RepoFolderLink,
     selectedPaths: string[],
     now: number,
-    generated?: Record<string, string | null>
+    generated?: Record<string, string | null>,
+    editedFiles?: Record<string, { text: string; generated: string }>
 ): RepoSource => ({
     ...link,
     diagramId,
@@ -150,4 +161,7 @@ export const toRepoSource = (
     linkedAt: now,
     pullRequestUrl: null,
     ...(generated ? { generated } : {}),
+    ...(editedFiles && Object.keys(editedFiles).length > 0
+        ? { editedFiles }
+        : {}),
 });

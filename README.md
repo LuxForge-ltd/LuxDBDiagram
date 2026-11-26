@@ -38,8 +38,8 @@ only. How it is built and deployed is described in
    On the hosted copy, **Open repository…** opens a folder of a GitHub repository the same way, after
    signing in with GitHub. The diagram remembers the repository, and **Actions → Save to
    repository…** later commits the files whose tables changed to a `luxdbdiag/` working branch,
-   after showing each one as a diff, and opens a pull request. Unchanged files are left exactly as
-   they are.
+   after showing each one as a diff, and opens a pull request. Changed files are edited in place,
+   so their comments and layout are kept; unchanged files are left exactly as they are.
 3. Use the Area tabs above the canvas and the **Areas** panel in the sidebar.
 4. Export with **Actions → Export as**, choosing either **DBML** (schema only) or **LuxDBDiagram DBML
    (with Areas)**.
