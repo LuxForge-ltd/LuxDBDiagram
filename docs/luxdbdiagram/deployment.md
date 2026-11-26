@@ -56,6 +56,13 @@ device code, which the operator approves in a browser signed in to the console; 
 # approve at https://openrail.luxforge.dev/cli-auth?code=<code>
 ```
 
+On 2026-11-26 the install was upgraded to v1.0.4, which renames OpenRail to LuxRail: the CLI is
+also called `luxrail`, and `5050` still works. The upgraded CLI no longer finds the login saved in
+`~/.config/openrail` and answers "You are not logged in", although the token there still works.
+Point it at that login with `export LUXRAIL_CONFIG=~/.config/openrail/config.json` before running
+it. `seal-var.py` and `web-deployments.py` read the login from that file, so keep it there until
+they are updated, rather than logging in again.
+
 Create the project (once), from a directory the CLI links to it:
 
 ```bash
@@ -71,8 +78,10 @@ mkdir -p ~/deploy/luxdbdiagram && cd ~/deploy/luxdbdiagram
 
 OpenRail sets aside 256 MB on the host for each replica unless `deploy.memoryReservationMb` (or a
 memory limit) says otherwise, and during an update the old and new replicas run side by side. nginx
-serving the app uses about 5 MB, so `web` reserves 64 MB; with the default, an update can wait with
-"Pending: no capacity" on a host whose memory is mostly reserved but unused.
+serving the app uses about 5 MB, so `web` reserves 64 MB, the least OpenRail accepts; with the
+default, an update can wait with "Pending: no capacity" on a host whose memory is mostly reserved
+but unused. It can still happen with 64 MB when other projects fill the host (see "When an update
+waits with "Pending: no capacity"" below).
 
 A service uses a registry credential only when its `source.registryCredential` names the
 credential's id (Settings > Registry credentials, or `GET /api/v1/registry-credentials`); OpenRail
@@ -126,6 +135,52 @@ it again. Check what runs from inside the project (see Check above): the page ti
 "LuxForge Database Diagrams built on ChartDB".
 
 The tunnel, Access and DNS do not change.
+
+### When an update waits with "Pending: no capacity"
+
+An update starts the new replica before it stops the old one: OpenRail always starts at least one
+new replica first and has no stop-first mode. The host therefore needs room for a second 64 MB
+reservation while the old version runs. On `openrail-trial` most other projects' services keep the
+default 256 MB, so the host can be full by reservation while much of its memory is unused; on
+2026-11-26 the 0.0.19 update waited with "Needs 64 MB; the largest free host has 36 MB." The old
+version keeps serving, and the new deployment fails after 10 minutes.
+
+`web` cannot reserve less than 64 MB. Choose one of these, the first if there is time:
+
+1. Make room: ask the owners of other projects on the host to lower their reservations, then
+   deploy again. Do not change other projects' services.
+2. Stop the old version first. While the new deployment is still waiting, remove `web`'s active
+   deployment: its reservation is freed and the waiting deployment starts. The site is unavailable
+   until the new replica passes its health check, under a minute on 2026-11-26. `web` holds no
+   data, so nothing is lost; never do this to a service that holds data.
+
+For the second, use [web-deployments.py](web-deployments.py): copy it to `~/deploy/luxdbdiagram` on
+the VM and run it from there. Without arguments it lists `web`'s latest deployments and the staged
+changes and changes nothing:
+
+```bash
+python3 web-deployments.py
+python3 web-deployments.py --remove-active <id of the active deployment>
+```
+
+It removes a deployment only when that deployment is `web`'s active one and another `web`
+deployment is waiting (`DEPLOYING`). It uses OpenRail's API with the CLI's login, as on 2026-11-26.
+The CLI's `down` command ("Remove the active deployment") may do the same, but has not been tried
+while another deployment waits. Then check what runs (see Check above).
+
+### A refused change stays staged
+
+When OpenRail refuses a change at commit (for example a memory reservation under 64 MB), the change
+stays staged. Until it is discarded, the next commit of the environment would fail on it, and
+`seal-var.py` (for other services) and the publish command refuse to run. `python3 web-deployments.py`
+lists the staged changes; discard one with:
+
+```bash
+python3 web-deployments.py --discard <id of the change>
+```
+
+The discard uses OpenRail's `DELETE /api/v1/environments/<environment>/changes/<change>`. It was
+first run on 2026-11-26, to discard a refused 32 MB reservation on `web`; nothing was redeployed.
 
 ## GitHub service (optional)
 
