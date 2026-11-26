@@ -141,6 +141,51 @@ describe('what saving to the repository changes', () => {
         expect(changed).toEqual([]);
     });
 
+    it('does not mark a file as changed when its foreign key types differ, however often it is checked', async () => {
+        // The exporter used to widen foreign key columns by changing the diagram it was given.
+        const file = {
+            path: 'people.dbml',
+            content: `Table people {
+  person_id bigint [pk]
+}
+
+Table visits {
+  visit_id bigint [pk]
+  person_id integer [ref: > people.person_id]
+}
+`,
+            sha: 'a'.repeat(40),
+        };
+        const files = withDefaultSelection([file]);
+        const diagram = await importDBMLToDiagram(
+            composeFolderDBML(files).content,
+            { databaseType: DatabaseType.POSTGRESQL }
+        );
+        const before = structuredClone(diagram);
+        const source = toRepoSource(
+            'diagram-2',
+            {
+                repo: 'LuxForge-ltd/schema',
+                branch: 'Dev',
+                folder: 'docs',
+                commit: 'e'.repeat(40),
+                baseBranch: 'Dev',
+                workingBranch: 'luxdbdiag/schema-def456',
+                files: [file],
+            },
+            ['people.dbml'],
+            1000,
+            repoBaseline(diagram, files, [file])
+        );
+        for (let check = 0; check < 3; check++) {
+            const changed = repoChanges(diagram, source).changes.filter(
+                (change) => change.kind === 'changed'
+            );
+            expect(changed).toEqual([]);
+        }
+        expect(diagram).toEqual(before);
+    });
+
     it('marks only the file whose table changed', async () => {
         const { diagram, source } = await open();
         const edited = withFieldType(diagram, 'notes', 'body', 'varchar');

@@ -1366,9 +1366,10 @@ export function generateDBMLFromDiagram(diagram: Diagram): DBMLExportResult {
     // Filter out fields with empty names
     const sanitizedTables =
         diagram.tables?.map((table) => {
-            const validFields = table.fields.filter(
-                (field) => field.name !== ''
-            );
+            const validFields = table.fields
+                .filter((field) => field.name !== '')
+                // LuxDBDiagram: copies, so exporting never changes the diagram it is given.
+                .map((field) => ({ ...field }));
             return {
                 ...table,
                 fields: validFields,
