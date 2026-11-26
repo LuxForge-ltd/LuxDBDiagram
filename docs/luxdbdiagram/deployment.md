@@ -1,7 +1,8 @@
 # Deploying LuxDBDiagram
 
 LuxDBDiagram is a static web app: nginx serves the built files, and every diagram lives in the
-visitor's own browser (IndexedDB). There is no backend, database or app secret to deploy.
+visitor's own browser (IndexedDB). There is no database. The only backend part is the optional
+GitHub service (see "GitHub service" below), which holds the only app secrets.
 
 ## Where it runs
 
@@ -12,7 +13,7 @@ visitor's own browser (IndexedDB). There is no backend, database or app secret t
 | OpenRail project | `luxdbdiagram`, environment `production` |
 | App service | `web`: the image above (set by digest, see "Update to a new version"), port 80, private name `web.internal`, pulled with the registry credential `GHCR`, memory reservation 64 MB |
 | Connector service | `cloudflared`: image `cloudflare/cloudflared:2026.11.2`, start command `tunnel --no-autoupdate run`, `TUNNEL_TOKEN` sealed in by `luxhome-cf-publish` |
-| GitHub service (optional) | `github`: image `ghcr.io/luxforge-ltd/luxdbdiagram-github:<version>`, port 8080, private name `github.internal`; `web` reaches it through `GITHUB_PROXY_URL` (see "GitHub service" below) |
+| GitHub service (optional) | `github`: image `ghcr.io/luxforge-ltd/luxdbdiagram-github:<version>` (set by digest), port 8080, private name `github.internal`, memory reservation 96 MB; `web` reaches it through `GITHUB_PROXY_URL` (see "GitHub service" below). Deployed 2026-11-26 with the GitHub App `luxdbdiag` |
 | Cloudflare | tunnel `luxdbdiagram`, route `luxdbdiagram.luxforge.dev` to `http://web.internal:80`, Access app with the shared policy `admin-only-access` |
 | Internet name | `https://luxdbdiagram.luxforge.dev`, behind Cloudflare Access |
 | LAN name | `luxdbdiagram.home.luxforge.dev` is not set up: it would be LuxHome internal DNS and proxy work |
@@ -141,7 +142,7 @@ Create it under the organisation: <https://github.com/organizations/LuxForge-ltd
 | --- | --- |
 | GitHub App name | for example `LuxDBDiag LuxForge` (must be unique on GitHub) |
 | Homepage URL | `https://luxdbdiagram.luxforge.dev` |
-| Callback URL | `https://luxdbdiagram.luxforge.dev/api/github/callback` |
+| Callback URL (some versions of the form label it Redirect URL) | `https://luxdbdiagram.luxforge.dev/api/github/callback` |
 | Expire user authorization tokens | on |
 | Request user authorization (OAuth) during installation | off |
 | Enable Device Flow | off |
@@ -150,10 +151,21 @@ Create it under the organisation: <https://github.com/organizations/LuxForge-ltd
 | Organization and account permissions | none |
 | Where can this GitHub App be installed? | Only on this account |
 
-Then generate a client secret (no private key is needed), install the App on the repositories the
-app may open (for example `Grassroots-Admin-Portal`), and note the App's client ID and URL name
-(the part after `github.com/apps/`). Copy the Access application's audience (AUD) tag from Cloudflare
-Zero Trust, Access, Applications, `luxdbdiagram`. It is not secret.
+Then generate a client secret (no private key is needed). Install the App with **Only select
+repositories**, choosing the repositories the app may open (for example `Grassroots-Admin-Portal`).
+Note the App's client ID and URL name (the part after `github.com/apps/`).
+
+Copy the Access application's audience (AUD) tag from Cloudflare Zero Trust, Access, Applications,
+`luxdbdiagram`. It is not secret. If the dashboard does not show it, sign in to
+`https://luxdbdiagram.luxforge.dev`, open the browser's developer console there and run:
+
+```js
+(() => { const c = (document.cookie.match(/CF_Authorization=([^;]+)/) || [])[1] || prompt('Paste the CF_Authorization cookie value'); return JSON.parse(atob(c.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).aud; })()
+```
+
+If the cookie cannot be read from the page, the snippet asks for its value: copy it from the
+developer tools (Application, Cookies). The snippet prints only the `aud` claim. The cookie itself
+is a sign-in token: never paste it anywhere else.
 
 ### Build and add the service
 
@@ -175,13 +187,19 @@ On the VM (`cd ~/deploy/luxdbdiagram`):
 5050 variables set -s github PUBLIC_URL=https://luxdbdiagram.luxforge.dev \
   ACCESS_TEAM_DOMAIN=<team>.cloudflareaccess.com ACCESS_AUD=<AUD tag> \
   GITHUB_CLIENT_ID=<client ID> GITHUB_APP_SLUG=<App URL name> -y
-head -c 32 /dev/urandom | base64 | 5050 variables set -s github SESSION_KEY --stdin -y
+head -c 32 /dev/urandom | base64 | python3 seal-var.py github SESSION_KEY
 5050 variables set -s web GITHUB_PROXY_URL=http://github.internal:8080 -y
 ```
 
-The operator sets the client secret themselves, from standard input so it never appears in shell
-history: `5050 variables set -s github GITHUB_CLIENT_SECRET --stdin -y`, then paste it and press
-Ctrl+D. `SESSION_KEY` is generated on the VM and never shown; changing it signs everyone out of
+The two secrets are sealed. The CLI's `variables set` stores plain variables, so they go in with
+[seal-var.py](seal-var.py): copy it to `~/deploy/luxdbdiagram` on the VM and run it from there. It
+uses the CLI's login to save the variable as sealed through OpenRail's API, then commits and deploys
+the change. It refuses to run while other services have staged changes, and
+`python3 seal-var.py --check SERVICE NAME` checks everything without changing anything.
+
+The operator seals the client secret themselves: `python3 seal-var.py github GITHUB_CLIENT_SECRET`,
+then paste the secret at the hidden prompt and press Enter. It never appears on screen or in shell
+history. `SESSION_KEY` is generated on the VM and never shown; changing it signs everyone out of
 GitHub. Wait for each service to be `online` before the next change (see "Update to a new version").
 
 Until every setting is present the service runs and `/api/github/status` lists what is missing.
