@@ -31,6 +31,15 @@ export interface RepoFileChange {
     tableCount: number;
     /** Whether the file is ticked to commit at first. */
     selected: boolean;
+    /**
+     * How a changed file is written (set by `repo-in-place.ts`): its own text with only the
+     * diagram's changes, or rewritten whole by the exporter.
+     */
+    method?: 'in-place' | 'rewritten';
+    /** For a rewritten file: why it could not be edited in place. */
+    rewriteReason?: string;
+    /** For a rewritten file: how many of GitHub's lines hold comments, which the rewrite drops. */
+    lostCommentLines?: number;
 }
 
 export interface RepoChanges {
@@ -56,7 +65,7 @@ const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
  * returns them ordered by their (random) ids, not as imported, and the files' text follows that
  * order; without this, reopening a diagram would make every file look changed.
  */
-const inFixedOrder = (diagram: Diagram): Diagram => ({
+export const inFixedOrder = (diagram: Diagram): Diagram => ({
     ...diagram,
     tables: [...(diagram.tables ?? [])].sort(
         (a, b) =>
@@ -118,6 +127,32 @@ export const repoBaseline = (
         baseline[file.path] = edited.has(file.path) ? null : file.content;
     }
     return baseline;
+};
+
+/**
+ * Files edited in the import editor before importing: their text as imported and what LuxDBDiag
+ * wrote for them then, so a later save can edit that text in place.
+ *
+ * @param imported The files as imported (possibly edited in the import editor).
+ * @param onGitHub The files as GitHub has them.
+ */
+export const repoEditedFiles = (
+    diagram: Diagram,
+    imported: { path: string; content: string }[],
+    onGitHub: { path: string; content: string }[]
+): Record<string, { text: string; generated: string }> => {
+    const original = new Map(onGitHub.map((file) => [file.path, file.content]));
+    const generated = new Map(
+        generatedFiles(diagram).files.map((file) => [file.path, file.content])
+    );
+    const edited: Record<string, { text: string; generated: string }> = {};
+    for (const file of imported) {
+        const written = generated.get(file.path);
+        if (original.get(file.path) !== file.content && written !== undefined) {
+            edited[file.path] = { text: file.content, generated: written };
+        }
+    }
+    return edited;
 };
 
 export const repoChanges = (
@@ -195,10 +230,18 @@ export const afterCommit = (
         content: string;
         sha: string;
         kind: 'changed' | 'new';
+        /** Whether the file was rewritten whole by the exporter. */
+        rewritten?: boolean;
     }[],
     result: { kind: 'committed' | 'unchanged'; branch: string; commit: string }
 ): RepoSource => {
     const done = new Map(committed.map((file) => [file.path, file]));
+    // A committed file is GitHub's text from now on, edited or not.
+    const editedFiles = Object.fromEntries(
+        Object.entries(source.editedFiles ?? {}).filter(
+            ([path]) => !done.has(path)
+        )
+    );
     const files: RepoSourceFile[] = source.files.map((file) => {
         const update = done.get(file.path);
         return update
@@ -238,6 +281,7 @@ export const afterCommit = (
             ...source,
             files: files.sort((a, b) => a.path.localeCompare(b.path)),
             generated,
+            editedFiles,
         };
     }
 
@@ -245,15 +289,21 @@ export const afterCommit = (
         (source.committedFiles ?? []).map((file) => [file.path, file])
     );
     for (const file of committed) {
-        if (!committedFiles.has(file.path)) {
-            committedFiles.set(file.path, { path: file.path, kind: file.kind });
-        }
+        const previous = committedFiles.get(file.path);
+        committedFiles.set(file.path, {
+            path: file.path,
+            kind: previous?.kind ?? file.kind,
+            ...(file.rewritten || previous?.rewritten
+                ? { rewritten: true }
+                : {}),
+        });
     }
 
     return {
         ...source,
         files: files.sort((a, b) => a.path.localeCompare(b.path)),
         generated,
+        editedFiles,
         workingBranch: result.branch,
         lastCommit: result.commit,
         committedFiles: [...committedFiles.values()].sort((a, b) =>
@@ -271,15 +321,19 @@ export const defaultCommitMessage = (changes: RepoFileChange[]): string => {
 
 /** The pull request description: what changed, and how. */
 export const pullRequestBody = (
-    changes: { path: string; kind: 'changed' | 'new' }[]
+    changes: { path: string; kind: 'changed' | 'new'; rewritten?: boolean }[]
 ): string =>
     [
         'Schema changes saved from LuxDBDiag.',
         '',
         ...changes.map(
             (change) =>
-                `- ${change.kind === 'new' ? 'Added' : 'Updated'} \`${change.path}\``
+                `- ${change.kind === 'new' ? 'Added' : 'Updated'} \`${change.path}\`${
+                    change.rewritten
+                        ? ' (rewritten whole by the DBML exporter, without its comments)'
+                        : ''
+                }`
         ),
         '',
-        'Files are written by the DBML exporter, so `//` comments in updated files are not kept and inline `ref:` settings become `Ref` lines.',
+        'Updated files are edited in place: only the tables, columns and relationships that changed in the diagram are changed, and comments are kept. New tables and relationships are added at the end of the file.',
     ].join('\n');

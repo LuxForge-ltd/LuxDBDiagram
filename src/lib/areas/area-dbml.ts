@@ -611,6 +611,6 @@ export const commentLossWarning = (content: string): DBMLImportIssue | null => {
     return {
         severity: 'warning',
         code: 'comments_not_kept',
-        message: `${lineComments} "//" comment line${lineComments === 1 ? ' is' : 's are'} not kept: the diagram stores schema structure and notes, not comments. Use note: '...' on tables and columns to keep text with the schema.`,
+        message: `${lineComments} "//" comment line${lineComments === 1 ? ' is' : 's are'} not shown in the diagram, which stores schema structure and notes, not comments. Save to repository keeps them in their files; other exports leave them out. Use note: '...' on tables and columns to keep text with the schema.`,
     };
 };
