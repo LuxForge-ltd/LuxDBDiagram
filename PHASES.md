@@ -47,6 +47,7 @@ Handoff record for agent work in this repository, as required by LuxForge [AI Ag
 | 18 GitHub service and GAP test record | `phase-18-record-github-test` | Merged into `Dev` (`d9bb594`) | 0.0.18 | [#20](https://github.com/LuxForge-ltd/LuxDBDiagram/pull/20) | "Approve and merge", 2026-11-26; order: "Now, then Phase 19", 2026-11-26 |
 | 19 Save files in place | `phase-19-keep-file-text` | Merged into `Dev` (`c20748a`); released to OpenRail 2026-11-26 | 0.0.19 | [#21](https://github.com/LuxForge-ltd/LuxDBDiagram/pull/21) | "Approve Phase 19", 2026-11-26 |
 | 20 Release and capacity record | `phase-20-record-release-capacity` | Complete, checks passed on joyeuse | 0.0.20 | this pull request | Plan: "Yes, record it"; commit and merge: "Commit, PR and merge", 2026-11-26 |
+| 01 | `phase-01-sync-agent-governance` | PR open, awaiting operator merge | 0.0.21 | opened by Sync-RepoGovernance.ps1 | Operator ran the sync with -OpenPullRequest, 2026-11-27 13:02 UTC |
 
 ## Handoff Notes
 
